@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -93,7 +94,8 @@ export default function TicTacToe() {
   const [difficulty, setDifficulty] = useState<Difficulty>('beginner');
   const [showHighScoreDialog, setShowHighScoreDialog] = useState(false);
   const { isHighScore, addHighScore } = useHighScores(GAME_ID);
-
+  const [startTime, setStartTime] = useState<number | null>(null);
+  const [score, setScore] = useState(0);
 
   const winner = calculateWinner(squares);
   const isDraw = !winner && isBoardFull(squares);
@@ -106,13 +108,29 @@ export default function TicTacToe() {
     status = `Next player: ${xIsNext ? 'X' : 'O'}`;
   }
   
-  const score = winner === 'X' ? 100 : (winner === 'O' ? 0 : 50);
-
   useEffect(() => {
-    if (winner && gameMode === 'ai' && isHighScore(score)) {
-      setShowHighScoreDialog(true);
+    if(startTime === null && gameMode === 'ai' && !winner && !isDraw) {
+        setStartTime(Date.now());
     }
-  }, [winner, gameMode, score, isHighScore]);
+    
+    if ((winner || isDraw) && gameMode === 'ai' && startTime !== null) {
+        const endTime = Date.now();
+        const timeTaken = (endTime - startTime) / 1000; // in seconds
+        let finalScore = 0;
+        if (winner === 'X') {
+            finalScore = Math.max(0, 1000 - Math.floor(timeTaken * 10));
+        } else if (isDraw) {
+            finalScore = 50;
+        }
+        setScore(finalScore);
+        
+        if (winner === 'X' && isHighScore(finalScore)) {
+          setShowHighScoreDialog(true);
+        }
+        setStartTime(null);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [winner, isDraw, gameMode, startTime]);
 
   function handleClick(i: number) {
     if (squares[i] || winner || (gameMode === 'ai' && !xIsNext)) {
@@ -127,6 +145,8 @@ export default function TicTacToe() {
   function handleRestart() {
     setSquares(Array(9).fill(null));
     setXIsNext(true);
+    setScore(0);
+    setStartTime(null);
   }
 
   const aiMove = () => {
