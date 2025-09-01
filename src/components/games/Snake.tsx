@@ -54,11 +54,6 @@ export default function Snake() {
     };
 
     const runGame = () => {
-        if (gameOver) {
-            if (gameLoopRef.current) clearInterval(gameLoopRef.current);
-            return;
-        }
-
         setSnake(prevSnake => {
             const newSnake = [...prevSnake];
             const head = { ...newSnake[0] };
@@ -95,13 +90,14 @@ export default function Snake() {
     }, [difficulty]);
     
     useEffect(() => {
+        if (gameLoopRef.current) clearInterval(gameLoopRef.current);
         if (!gameOver) {
             gameLoopRef.current = setInterval(runGame, DIFFICULTY_SETTINGS[difficulty]);
         }
         return () => {
             if (gameLoopRef.current) clearInterval(gameLoopRef.current);
         };
-    }, [snake, direction, food, gameOver, difficulty]);
+    }, [direction, food, gameOver, difficulty, runGame]); // Added runGame as dependency, and cleared interval on change
 
     useEffect(() => {
         const ctx = canvasRef.current?.getContext('2d');
