@@ -1,3 +1,4 @@
+
 "use client";
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
@@ -216,12 +217,12 @@ export default function Pong() {
         </div>
       </div>
       
-      <div className="relative">
+      <div className="relative w-full aspect-[3/2] max-w-[600px]">
         <canvas
           ref={canvasRef}
           width={CANVAS_WIDTH}
           height={CANVAS_HEIGHT}
-          className="rounded-lg border-2 border-primary"
+          className="rounded-lg border-2 border-primary w-full h-full"
         />
          {(gameOver) && (
             <div className="absolute inset-0 text-center flex flex-col items-center justify-center bg-background/80 p-8 rounded-lg">
