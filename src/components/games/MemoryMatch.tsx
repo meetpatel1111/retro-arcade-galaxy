@@ -77,7 +77,14 @@ export default function MemoryMatch() {
 
       if (firstCard && secondCard && firstCard.icon === secondCard.icon) {
         setScore(s => s + 20);
-        setCards(prevCards => prevCards.map(c => (c.icon === firstCard.icon) ? { ...c, isMatched: true } : c));
+        
+        const updatedCards = newCards.map(c => (c.icon === firstCard.icon) ? { ...c, isMatched: true, isFlipped: true } : c);
+        setCards(updatedCards);
+
+        if (updatedCards.every(card => card.isMatched)) {
+            setGameOver(true);
+        }
+
         setFlippedCards([]);
         setIsChecking(false);
       } else {
@@ -91,12 +98,6 @@ export default function MemoryMatch() {
     }
   };
 
-  useEffect(() => {
-    if (cards.length > 0 && cards.every(card => card.isMatched)) {
-      setGameOver(true);
-    }
-  }, [cards]);
-  
   return (
     <div className="flex flex-col items-center w-full max-w-4xl">
       <div className="w-full flex justify-between items-center mb-4 p-4 rounded-lg bg-card/50 border border-border">
