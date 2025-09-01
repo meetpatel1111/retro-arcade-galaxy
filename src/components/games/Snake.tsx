@@ -1,9 +1,10 @@
 "use client";
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import DifficultyAdjuster from '../DifficultyAdjuster';
+import { ArrowUp, ArrowDown, ArrowLeft, ArrowRight } from 'lucide-react';
 
 const GRID_SIZE = 20;
 const TILE_SIZE = 20;
@@ -32,13 +33,21 @@ export default function Snake() {
     const gameLoopRef = useRef<NodeJS.Timeout | null>(null);
     const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
+    const handleSetDirection = (newDirection: Vector) => {
+        // Prevent snake from reversing on itself
+        if (direction.x === -newDirection.x && direction.y === -newDirection.y) {
+            return;
+        }
+        setDirection(newDirection);
+    }
+
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
             switch (e.key) {
-                case 'ArrowUp': if (direction.y === 0) setDirection({ x: 0, y: -1 }); break;
-                case 'ArrowDown': if (direction.y === 0) setDirection({ x: 0, y: 1 }); break;
-                case 'ArrowLeft': if (direction.x === 0) setDirection({ x: -1, y: 0 }); break;
-                case 'ArrowRight': if (direction.x === 0) setDirection({ x: 1, y: 0 }); break;
+                case 'ArrowUp': if (direction.y === 0) handleSetDirection({ x: 0, y: -1 }); break;
+                case 'ArrowDown': if (direction.y === 0) handleSetDirection({ x: 0, y: 1 }); break;
+                case 'ArrowLeft': if (direction.x === 0) handleSetDirection({ x: -1, y: 0 }); break;
+                case 'ArrowRight': if (direction.x === 0) handleSetDirection({ x: 1, y: 0 }); break;
             }
         };
         document.addEventListener('keydown', handleKeyDown);
@@ -53,17 +62,16 @@ export default function Snake() {
         setGameOver(false);
     };
 
-    const runGame = () => {
+    const runGame = useCallback(() => {
+        if (gameOver) return;
         setSnake(prevSnake => {
             const newSnake = [...prevSnake];
-            const head = { ...newSnake[0] };
-            head.x += direction.x;
-            head.y += direction.y;
+            const head = { 
+                x: (newSnake[0].x + direction.x + GRID_SIZE) % GRID_SIZE, 
+                y: (newSnake[0].y + direction.y + GRID_SIZE) % GRID_SIZE 
+            };
 
-            if (
-                head.x < 0 || head.x >= GRID_SIZE || head.y < 0 || head.y >= GRID_SIZE ||
-                newSnake.some(segment => segment.x === head.x && segment.y === head.y)
-            ) {
+            if (newSnake.some(segment => segment.x === head.x && segment.y === head.y)) {
                 setGameOver(true);
                 return prevSnake;
             }
@@ -83,21 +91,26 @@ export default function Snake() {
             
             return newSnake;
         });
-    };
+    }, [direction, food, gameOver]);
+
 
     useEffect(() => {
         startGame();
     }, [difficulty]);
     
     useEffect(() => {
-        if (gameLoopRef.current) clearInterval(gameLoopRef.current);
-        if (!gameOver) {
-            gameLoopRef.current = setInterval(runGame, DIFFICULTY_SETTINGS[difficulty]);
+        if (gameOver) {
+            if (gameLoopRef.current) clearInterval(gameLoopRef.current);
+            return;
         }
+        
+        if (gameLoopRef.current) clearInterval(gameLoopRef.current);
+        gameLoopRef.current = setInterval(runGame, DIFFICULTY_SETTINGS[difficulty]);
+        
         return () => {
             if (gameLoopRef.current) clearInterval(gameLoopRef.current);
         };
-    }, [direction, food, gameOver, difficulty, runGame]); // Added runGame as dependency, and cleared interval on change
+    }, [runGame, gameOver, difficulty]);
 
     useEffect(() => {
         const ctx = canvasRef.current?.getContext('2d');
@@ -108,7 +121,7 @@ export default function Snake() {
 
         ctx.fillStyle = 'hsl(var(--primary))';
         snake.forEach(segment => {
-            ctx.fillRect(segment.x * TILE_SIZE, segment.y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
+            ctx.fillRect(segment.x * TILE_SIZE, segment.y * TILE_SIZE, TILE_SIZE -1 , TILE_SIZE -1);
         });
 
         ctx.fillStyle = 'hsl(var(--accent))';
@@ -144,6 +157,14 @@ export default function Snake() {
                     />
                 </div>
             )}
+            <div className="mt-4 grid grid-cols-3 gap-2 w-48 md:hidden">
+                <div></div>
+                <Button size="icon" className="h-16 w-16" onClick={() => handleSetDirection({ x: 0, y: -1 })}><ArrowUp /></Button>
+                <div></div>
+                <Button size="icon" className="h-16 w-16" onClick={() => handleSetDirection({ x: -1, y: 0 })}><ArrowLeft /></Button>
+                <Button size="icon" className="h-16 w-16" onClick={() => handleSetDirection({ x: 0, y: 1 })}><ArrowDown /></Button>
+                <Button size="icon" className="h-16 w-16" onClick={() => handleSetDirection({ x: 1, y: 0 })}><ArrowRight /></Button>
+            </div>
         </div>
     );
 }
