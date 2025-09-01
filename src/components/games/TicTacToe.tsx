@@ -63,6 +63,7 @@ export default function TicTacToe() {
   const renderSquare = (i: number) => {
     return (
       <button
+        key={i}
         className={cn(
             "aspect-square w-24 h-24 flex items-center justify-center text-5xl font-bold rounded-md transition-colors",
             "bg-secondary hover:bg-secondary/80",
