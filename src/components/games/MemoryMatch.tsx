@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import DifficultyAdjuster from '../DifficultyAdjuster';
 import { Gamepad2, Gift, Ghost, Heart, Star, Sun, Rocket, Bomb, Skull, Crown } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -33,13 +33,7 @@ export default function MemoryMatch() {
   const [gameOver, setGameOver] = useState(false);
   const [isChecking, setIsChecking] = useState(false);
 
-  const { pairs, grid } = DIFFICULTY_SETTINGS[difficulty];
-
-  useEffect(() => {
-    createBoard();
-  }, [difficulty]);
-
-  const createBoard = () => {
+  const createBoard = useCallback(() => {
     const { pairs } = DIFFICULTY_SETTINGS[difficulty];
     const selectedIcons = ICONS.slice(0, pairs);
     const gameIcons = [...selectedIcons, ...selectedIcons];
@@ -57,7 +51,17 @@ export default function MemoryMatch() {
     setFlippedCards([]);
     setGameOver(false);
     setIsChecking(false);
-  };
+  }, [difficulty]);
+
+  useEffect(() => {
+    createBoard();
+  }, [difficulty, createBoard]);
+
+  useEffect(() => {
+    if (cards.length > 0 && cards.every(card => card.isMatched)) {
+      setGameOver(true);
+    }
+  }, [cards]);
 
   const handleCardClick = (id: number) => {
     if (isChecking || flippedCards.length === 2 || cards[id].isFlipped || cards[id].isMatched) return;
@@ -78,15 +82,13 @@ export default function MemoryMatch() {
       if (firstCard && secondCard && firstCard.icon === secondCard.icon) {
         setScore(s => s + 20);
         
-        const updatedCards = newCards.map(c => (c.icon === firstCard.icon) ? { ...c, isMatched: true, isFlipped: true } : c);
-        setCards(updatedCards);
+        setTimeout(() => {
+          const updatedCards = newCards.map(c => (c.icon === firstCard.icon) ? { ...c, isMatched: true, isFlipped: true } : c);
+          setCards(updatedCards);
+          setFlippedCards([]);
+          setIsChecking(false);
+        }, 500);
 
-        if (updatedCards.every(card => card.isMatched)) {
-            setGameOver(true);
-        }
-
-        setFlippedCards([]);
-        setIsChecking(false);
       } else {
         setScore(s => Math.max(0, s - 5));
         setTimeout(() => {
@@ -97,6 +99,8 @@ export default function MemoryMatch() {
       }
     }
   };
+
+  const { grid } = DIFFICULTY_SETTINGS[difficulty];
 
   return (
     <div className="flex flex-col items-center w-full max-w-4xl">
