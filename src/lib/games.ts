@@ -1,5 +1,5 @@
 import type { Game } from '@/lib/types';
-import { BrainCircuit, Puzzle, Zap, GitCommitHorizontal, Hammer, X, Rows4, MoveHorizontal, Bomb } from 'lucide-react';
+import { BrainCircuit, Puzzle, Zap, GitCommitHorizontal, Hammer, X, Rows4, MoveHorizontal, Bomb, Star, CaseSensitive } from 'lucide-react';
 
 export const GAMES: Game[] = [
   {
@@ -57,5 +57,19 @@ export const GAMES: Game[] = [
     description: 'Clear the board without hitting a mine.',
     icon: Bomb,
     href: '/games/minesweeper',
+  },
+  {
+    id: 'memory-match',
+    name: 'Memory Match',
+    description: 'Flip cards to find matching pairs.',
+    icon: Star,
+    href: '/games/memory-match',
+  },
+  {
+    id: 'word-scramble',
+    name: 'Word Scramble',
+    description: 'Unscramble the letters to form a word.',
+    icon: CaseSensitive,
+    href: '/games/word-scramble',
   },
 ];
