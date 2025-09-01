@@ -6,12 +6,15 @@ import { cn } from '@/lib/utils';
 import DifficultyAdjuster from '../DifficultyAdjuster';
 import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
 import { Label } from '../ui/label';
+import { ArrowUp, ArrowDown } from 'lucide-react';
+
 
 const CANVAS_WIDTH = 600;
 const CANVAS_HEIGHT = 400;
 const PADDLE_WIDTH = 10;
 const PADDLE_HEIGHT = 100;
 const BALL_RADIUS = 10;
+const PLAYER_PADDLE_SPEED = 10;
 
 type GameState = {
   ballX: number;
@@ -22,6 +25,7 @@ type GameState = {
   paddle2Y: number;
   score1: number;
   score2: number;
+  player1Velocity: number;
 };
 
 type Difficulty = 'beginner' | 'intermediate' | 'expert';
@@ -42,6 +46,7 @@ export default function Pong() {
     paddle2Y: CANVAS_HEIGHT / 2 - PADDLE_HEIGHT / 2,
     score1: 0,
     score2: 0,
+    player1Velocity: 0,
   });
   const [scores, setScores] = useState({ player1: 0, player2: 0 });
   const [gameOver, setGameOver] = useState(true);
@@ -74,11 +79,17 @@ export default function Pong() {
     if (gameOver) return;
 
     const gs = gameStateRef.current;
-    const { ballSpeed, aiSpeed } = DIFFICULTY_SETTINGS[difficulty];
+    const { aiSpeed } = DIFFICULTY_SETTINGS[difficulty];
     
     // Move ball
     gs.ballX += gs.ballSpeedX;
     gs.ballY += gs.ballSpeedY;
+
+    // Move player paddle
+    gs.paddle1Y += gs.player1Velocity;
+    if (gs.paddle1Y < 0) gs.paddle1Y = 0;
+    if (gs.paddle1Y > CANVAS_HEIGHT - PADDLE_HEIGHT) gs.paddle1Y = CANVAS_HEIGHT - PADDLE_HEIGHT;
+
 
     // AI movement
     if (gameMode === 'ai') {
@@ -182,23 +193,16 @@ export default function Pong() {
     }
   }, [gameOver, gameLoop]);
 
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
 
-    const movePaddle = (e: MouseEvent) => {
-      const rect = canvas.getBoundingClientRect();
-      let root = document.documentElement;
-      let newY = e.clientY - rect.top - root.scrollTop - PADDLE_HEIGHT / 2;
-      
-      if (newY < 0) newY = 0;
-      if (newY > CANVAS_HEIGHT - PADDLE_HEIGHT) newY = CANVAS_HEIGHT - PADDLE_HEIGHT;
-      gameStateRef.current.paddle1Y = newY;
-    };
-    
-    canvas.addEventListener('mousemove', movePaddle);
-    return () => canvas.removeEventListener('mousemove', movePaddle);
-  }, []);
+  const handlePlayerMove = (direction: 'up' | 'down' | 'stop') => {
+    if (direction === 'up') {
+      gameStateRef.current.player1Velocity = -PLAYER_PADDLE_SPEED;
+    } else if (direction === 'down') {
+      gameStateRef.current.player1Velocity = PLAYER_PADDLE_SPEED;
+    } else {
+      gameStateRef.current.player1Velocity = 0;
+    }
+  };
 
   const playerScore = gameMode === 'ai' ? scores.player1 * 10 - scores.player2 * 5 : 0;
   
@@ -243,10 +247,6 @@ export default function Pong() {
                                 <RadioGroupItem value="ai" id="ai" />
                                 <Label htmlFor="ai">vs AI</Label>
                                 </div>
-                                {/* <div className="flex items-center space-x-2">
-                                <RadioGroupItem value="player" id="player" />
-                                <Label htmlFor="player">2 Players</Label>
-                                </div> */}
                             </RadioGroup>
                          </div>
                         <Button onClick={startGame} size="lg">Start Game</Button>
@@ -254,6 +254,30 @@ export default function Pong() {
                 )}
             </div>
         )}
+      </div>
+
+      <div className="mt-4 flex flex-col items-center gap-2">
+          <p className="text-sm text-muted-foreground">Controls</p>
+          <div className="flex gap-4">
+             <Button
+                size="lg"
+                onMouseDown={() => handlePlayerMove('up')}
+                onMouseUp={() => handlePlayerMove('stop')}
+                onTouchStart={(e) => { e.preventDefault(); handlePlayerMove('up'); }}
+                onTouchEnd={(e) => { e.preventDefault(); handlePlayerMove('stop'); }}
+            >
+                <ArrowUp /> Up
+            </Button>
+            <Button
+                size="lg"
+                onMouseDown={() => handlePlayerMove('down')}
+                onMouseUp={() => handlePlayerMove('stop')}
+                onTouchStart={(e) => { e.preventDefault(); handlePlayerMove('down'); }}
+                onTouchEnd={(e) => { e.preventDefault(); handlePlayerMove('stop'); }}
+            >
+                <ArrowDown /> Down
+            </Button>
+          </div>
       </div>
     </div>
   );
