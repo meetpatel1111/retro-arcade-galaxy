@@ -1,4 +1,3 @@
-
 "use client";
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
@@ -7,8 +6,13 @@ import { cn } from '@/lib/utils';
 import DifficultyAdjuster from '../DifficultyAdjuster';
 import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
 import { Label } from '../ui/label';
-import { ArrowUp, ArrowDown } from 'lucide-react';
+import { ArrowUp, ArrowDown, Trophy } from 'lucide-react';
+import { useHighScores } from '@/hooks/useHighScores';
+import HighScoreDialog from '../HighScoreDialog';
 
+const GAME_ID = 'pong';
+const GAME_NAME = 'Pong';
+const WINNING_SCORE = 5;
 
 const CANVAS_WIDTH = 600;
 const CANVAS_HEIGHT = 400;
@@ -54,6 +58,8 @@ export default function Pong() {
   const [winner, setWinner] = useState<string | null>(null);
   const [difficulty, setDifficulty] = useState<Difficulty>('beginner');
   const [gameMode, setGameMode] = useState<'player' | 'ai'>('ai');
+  const [showHighScoreDialog, setShowHighScoreDialog] = useState(false);
+  const { isHighScore, addHighScore } = useHighScores(GAME_ID);
 
   const resetBall = useCallback(() => {
     const gs = gameStateRef.current;
@@ -144,10 +150,14 @@ export default function Pong() {
     }
     
     // Check for winner
-    if (gs.score1 >= 10) {
+    if (gs.score1 >= WINNING_SCORE) {
       setWinner('Player 1');
       setGameOver(true);
-    } else if (gs.score2 >= 10) {
+      const score = gameMode === 'ai' ? gs.score1 * 10 - gs.score2 * 5 : 0;
+      if (gameMode === 'ai' && isHighScore(score)) {
+          setShowHighScoreDialog(true);
+      }
+    } else if (gs.score2 >= WINNING_SCORE) {
       setWinner(gameMode === 'ai' ? 'AI' : 'Player 2');
       setGameOver(true);
     }
@@ -185,7 +195,7 @@ export default function Pong() {
     ctx.fill();
 
     requestAnimationFrame(gameLoop);
-  }, [gameOver, difficulty, resetBall, gameMode]);
+  }, [gameOver, difficulty, resetBall, gameMode, isHighScore]);
 
   useEffect(() => {
     if (!gameOver) {
@@ -211,9 +221,12 @@ export default function Pong() {
     <div className="flex flex-col items-center w-full max-w-4xl">
       <div className="w-full flex justify-between items-center mb-4 p-4 rounded-lg bg-card/50 border border-border">
         <Button variant="ghost" asChild><Link href="/">&larr; Back to Menu</Link></Button>
-        <h1 className="text-4xl font-bold text-primary">Pong</h1>
-        <div className="text-right min-w-[200px] text-2xl font-bold">
-          <span className="text-primary">{scores.player1}</span> : <span className="text-accent">{scores.player2}</span>
+        <h1 className="text-4xl font-bold text-primary">{GAME_NAME}</h1>
+        <div className="flex items-center gap-4">
+             <Button variant="outline" asChild><Link href={`/leaderboard/${GAME_ID}`}><Trophy className="mr-2 h-4 w-4" /> Leaderboard</Link></Button>
+            <div className="text-right min-w-[100px] text-2xl font-bold">
+                <span className="text-primary">{scores.player1}</span> : <span className="text-accent">{scores.player2}</span>
+            </div>
         </div>
       </div>
       
@@ -229,6 +242,13 @@ export default function Pong() {
                 {winner ? (
                      <>
                         <h2 className="text-5xl font-bold text-primary mb-4">{winner} Wins!</h2>
+                         <HighScoreDialog 
+                            open={showHighScoreDialog} 
+                            onOpenChange={setShowHighScoreDialog}
+                            score={playerScore}
+                            gameName={GAME_NAME}
+                            onSave={(playerName) => addHighScore({ score: playerScore, playerName })}
+                        />
                         <Button onClick={startGame} size="lg">Play Again</Button>
                         {gameMode === 'ai' && (
                              <DifficultyAdjuster 

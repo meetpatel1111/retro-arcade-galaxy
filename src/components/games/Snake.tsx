@@ -4,8 +4,12 @@ import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import DifficultyAdjuster from '../DifficultyAdjuster';
-import { ArrowUp, ArrowDown, ArrowLeft, ArrowRight } from 'lucide-react';
+import { ArrowUp, ArrowDown, ArrowLeft, ArrowRight, Trophy } from 'lucide-react';
+import HighScoreDialog from '../HighScoreDialog';
+import { useHighScores } from '@/hooks/useHighScores';
 
+const GAME_ID = 'snake';
+const GAME_NAME = 'Snake';
 const GRID_SIZE = 20;
 const TILE_SIZE = 20;
 
@@ -37,6 +41,8 @@ export default function Snake() {
     const [score, setScore] = useState(0);
     const [difficulty, setDifficulty] = useState<Difficulty>('beginner');
     const [isStarted, setIsStarted] = useState(false);
+    const [showHighScoreDialog, setShowHighScoreDialog] = useState(false);
+    const { isHighScore, addHighScore } = useHighScores(GAME_ID);
     const gameLoopRef = useRef<NodeJS.Timeout | null>(null);
     const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
@@ -47,6 +53,14 @@ export default function Snake() {
         }
         setDirection(newDirection);
     }
+    
+    const handleGameOver = useCallback(() => {
+        setGameOver(true);
+        setIsStarted(false);
+        if (isHighScore(score)) {
+            setShowHighScoreDialog(true);
+        }
+    }, [score, isHighScore]);
 
     const startGame = useCallback(() => {
         const startSnake = [{ x: 10, y: 10 }];
@@ -70,8 +84,7 @@ export default function Snake() {
             // Check for collision with self
             for (let i = 1; i < newSnake.length; i++) {
                 if (head.x === newSnake[i].x && head.y === newSnake[i].y) {
-                    setGameOver(true);
-                    setIsStarted(false);
+                    handleGameOver();
                     return prevSnake;
                 }
             }
@@ -87,7 +100,7 @@ export default function Snake() {
             
             return newSnake;
         });
-    }, [direction, food]);
+    }, [direction, food, handleGameOver]);
     
     useEffect(() => {
         if (isStarted && !gameOver) {
@@ -143,9 +156,12 @@ export default function Snake() {
         <div className="flex flex-col items-center w-full max-w-4xl">
             <div className="w-full flex justify-between items-center mb-4 p-4 rounded-lg bg-card/50 border border-border">
                 <Button variant="ghost" asChild><Link href="/">&larr; Back to Menu</Link></Button>
-                <h1 className="text-4xl font-bold text-primary">Snake</h1>
-                <div className="text-right min-w-[100px]">
-                    <p>Score: <span className="font-bold text-accent">{score}</span></p>
+                <h1 className="text-4xl font-bold text-primary">{GAME_NAME}</h1>
+                <div className="flex items-center gap-4">
+                    <Button variant="outline" asChild><Link href={`/leaderboard/${GAME_ID}`}><Trophy className="mr-2 h-4 w-4" /> Leaderboard</Link></Button>
+                    <div className="text-right min-w-[100px]">
+                        <p>Score: <span className="font-bold text-accent">{score}</span></p>
+                    </div>
                 </div>
             </div>
 
@@ -165,6 +181,13 @@ export default function Snake() {
                     <div className="absolute inset-0 text-center flex flex-col items-center justify-center bg-background/80 p-8 rounded-lg">
                         <h2 className="text-5xl font-bold text-destructive mb-4">Game Over</h2>
                         <p className="text-2xl mb-6">Final Score: {score}</p>
+                        <HighScoreDialog
+                            open={showHighScoreDialog}
+                            onOpenChange={setShowHighScoreDialog}
+                            score={score}
+                            gameName={GAME_NAME}
+                            onSave={(playerName) => addHighScore({ score, playerName })}
+                        />
                         <Button onClick={startGame} size="lg">Play Again</Button>
                          <DifficultyAdjuster 
                             gameName="Snake"

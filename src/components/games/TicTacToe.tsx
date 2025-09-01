@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -8,6 +7,12 @@ import { cn } from '@/lib/utils';
 import DifficultyAdjuster from '../DifficultyAdjuster';
 import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
 import { Label } from '../ui/label';
+import { Trophy } from 'lucide-react';
+import { useHighScores } from '@/hooks/useHighScores';
+import HighScoreDialog from '../HighScoreDialog';
+
+const GAME_ID = 'tic-tac-toe';
+const GAME_NAME = 'Tic-Tac-Toe';
 
 type Player = 'X' | 'O';
 type Squares = (Player | null)[];
@@ -86,6 +91,9 @@ export default function TicTacToe() {
   const [xIsNext, setXIsNext] = useState(true);
   const [gameMode, setGameMode] = useState<GameMode>('player');
   const [difficulty, setDifficulty] = useState<Difficulty>('beginner');
+  const [showHighScoreDialog, setShowHighScoreDialog] = useState(false);
+  const { isHighScore, addHighScore } = useHighScores(GAME_ID);
+
 
   const winner = calculateWinner(squares);
   const isDraw = !winner && isBoardFull(squares);
@@ -97,6 +105,14 @@ export default function TicTacToe() {
   } else {
     status = `Next player: ${xIsNext ? 'X' : 'O'}`;
   }
+  
+  const score = winner === 'X' ? 100 : (winner === 'O' ? 0 : 50);
+
+  useEffect(() => {
+    if (winner && gameMode === 'ai' && isHighScore(score)) {
+      setShowHighScoreDialog(true);
+    }
+  }, [winner, gameMode, score, isHighScore]);
 
   function handleClick(i: number) {
     if (squares[i] || winner || (gameMode === 'ai' && !xIsNext)) {
@@ -161,15 +177,14 @@ export default function TicTacToe() {
     );
   };
   
-  const score = winner === 'X' ? 100 : (winner === 'O' ? 0 : 50);
 
   return (
      <div className="flex flex-col items-center w-full max-w-4xl">
        <div className="w-full flex justify-between items-center mb-4 p-4 rounded-lg bg-card/50 border border-border">
         <Button variant="ghost" asChild><Link href="/">&larr; Back to Menu</Link></Button>
-        <h1 className="text-4xl font-bold text-primary">Tic-Tac-Toe</h1>
-        <div className="text-right min-w-[100px]">
-          {/* Placeholder for score if added later */}
+        <h1 className="text-4xl font-bold text-primary">{GAME_NAME}</h1>
+        <div className="text-right min-w-[150px]">
+            <Button variant="outline" asChild><Link href={`/leaderboard/${GAME_ID}`}><Trophy className="mr-2 h-4 w-4" /> Leaderboard</Link></Button>
         </div>
       </div>
       
@@ -194,6 +209,13 @@ export default function TicTacToe() {
       </div>
       {(winner || isDraw) && (
          <div className="text-center flex flex-col items-center mt-4">
+            <HighScoreDialog 
+                open={showHighScoreDialog} 
+                onOpenChange={setShowHighScoreDialog}
+                score={score}
+                gameName={GAME_NAME}
+                onSave={(playerName) => addHighScore({ score, playerName })}
+            />
             <Button onClick={handleRestart} className="mt-6" size="lg">Play Again</Button>
             {gameMode === 'ai' && (
               <DifficultyAdjuster 

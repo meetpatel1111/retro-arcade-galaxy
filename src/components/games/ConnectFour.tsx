@@ -6,9 +6,14 @@ import { cn } from '@/lib/utils';
 import DifficultyAdjuster from '../DifficultyAdjuster';
 import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
 import { Label } from '../ui/label';
+import HighScoreDialog from '../HighScoreDialog';
+import { Trophy } from 'lucide-react';
+import { useHighScores } from '@/hooks/useHighScores';
 
 const ROWS = 6;
 const COLS = 7;
+const GAME_ID = 'connect-four';
+const GAME_NAME = 'Connect Four';
 
 type Player = '1' | '2';
 type Board = (Player | null)[][];
@@ -72,6 +77,8 @@ export default function ConnectFour() {
   const [isDraw, setIsDraw] = useState(false);
   const [gameMode, setGameMode] = useState<GameMode>('player');
   const [difficulty, setDifficulty] = useState<Difficulty>('beginner');
+  const [showHighScoreDialog, setShowHighScoreDialog] = useState(false);
+  const { isHighScore, addHighScore } = useHighScores(GAME_ID);
 
   const handleColumnClick = (colIndex: number) => {
     if (winner || board[0][colIndex] || (gameMode === 'ai' && currentPlayer === '2')) return;
@@ -95,6 +102,10 @@ export default function ConnectFour() {
       const newWinner = checkWin(newBoard);
       if (newWinner) {
         setWinner(newWinner);
+        const score = newWinner === '1' ? 100 : (newWinner === '2' ? 0 : 50);
+        if (gameMode === 'ai' && isHighScore(score)) {
+            setShowHighScoreDialog(true);
+        }
       } else if (isBoardFull(newBoard)) {
         setIsDraw(true);
       } else {
@@ -145,9 +156,9 @@ export default function ConnectFour() {
     <div className="flex flex-col items-center w-full max-w-4xl">
        <div className="w-full flex justify-between items-center mb-4 p-4 rounded-lg bg-card/50 border border-border">
         <Button variant="ghost" asChild><Link href="/">&larr; Back to Menu</Link></Button>
-        <h1 className="text-4xl font-bold text-primary">Connect Four</h1>
-        <div className="text-right min-w-[100px]">
-          {/* Placeholder for future score display */}
+        <h1 className="text-4xl font-bold text-primary">{GAME_NAME}</h1>
+        <div className="text-right min-w-[150px]">
+          <Button variant="outline" asChild><Link href={`/leaderboard/${GAME_ID}`}><Trophy className="mr-2 h-4 w-4" /> Leaderboard</Link></Button>
         </div>
       </div>
       
@@ -183,6 +194,13 @@ export default function ConnectFour() {
 
        {(winner || isDraw) && (
         <div className="text-center flex flex-col items-center mt-4">
+            <HighScoreDialog 
+                open={showHighScoreDialog} 
+                onOpenChange={setShowHighScoreDialog}
+                score={score}
+                gameName={GAME_NAME}
+                onSave={(playerName) => addHighScore({ score, playerName })}
+            />
             <Button onClick={handleRestart} className="mt-6" size="lg">Play Again</Button>
             {gameMode === 'ai' && (
               <DifficultyAdjuster 

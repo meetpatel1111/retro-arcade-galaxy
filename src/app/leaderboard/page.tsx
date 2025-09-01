@@ -1,13 +1,5 @@
-import LeaderboardClient from '@/components/LeaderboardClient';
-import Header from '@/components/Header';
+import { redirect } from 'next/navigation';
 
-export default function LeaderboardPage() {
-  return (
-    <>
-      <Header />
-      <main className="container mx-auto flex min-h-screen flex-col items-center p-4 pt-12">
-        <LeaderboardClient />
-      </main>
-    </>
-  );
+export default function LeaderboardRedirectPage() {
+  redirect('/leaderboard/all');
 }

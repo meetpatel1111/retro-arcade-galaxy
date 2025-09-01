@@ -7,7 +7,8 @@ export type Game = {
 };
 
 export type HighScore = {
-  game: string;
+  gameId: string;
+  gameName: string;
   score: number;
   playerName: string;
   date: string;

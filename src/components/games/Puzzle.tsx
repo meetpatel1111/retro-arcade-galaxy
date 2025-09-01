@@ -4,7 +4,12 @@ import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import DifficultyAdjuster from '../DifficultyAdjuster';
+import HighScoreDialog from '../HighScoreDialog';
+import { Trophy } from 'lucide-react';
+import { useHighScores } from '@/hooks/useHighScores';
 
+const GAME_ID = 'puzzle';
+const GAME_NAME = 'Sliding Puzzle';
 const TILE_COUNT = 9;
 const GRID_SIZE = 3;
 
@@ -64,6 +69,8 @@ export default function Puzzle() {
   const [moves, setMoves] = useState(0);
   const [isSolved, setIsSolved] = useState(false);
   const [difficulty, setDifficulty] = useState<Difficulty>('beginner');
+  const [showHighScoreDialog, setShowHighScoreDialog] = useState(false);
+  const { isHighScore, addHighScore } = useHighScores(GAME_ID);
 
   const initializeGame = useCallback(() => {
     const solved = createSolvedTiles();
@@ -76,6 +83,8 @@ export default function Puzzle() {
   useEffect(() => {
     initializeGame();
   }, [initializeGame]);
+  
+  const score = Math.max(0, 1000 - moves * 10);
 
   useEffect(() => {
     const checkSolved = () => {
@@ -85,8 +94,13 @@ export default function Puzzle() {
       return tiles[TILE_COUNT - 1] === null;
     };
     if(tiles.length > 0) {
-      setIsSolved(checkSolved());
+      const solved = checkSolved();
+      setIsSolved(solved);
+      if (solved && isHighScore(score)) {
+        setShowHighScoreDialog(true);
+      }
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tiles]);
 
   const handleTileClick = (index: number) => {
@@ -105,17 +119,18 @@ export default function Puzzle() {
       setMoves(moves + 1);
     }
   };
-  
-  const score = Math.max(0, 1000 - moves * 10);
 
   return (
     <div className="flex flex-col items-center w-full max-w-4xl">
        <div className="w-full flex justify-between items-center mb-4 p-4 rounded-lg bg-card/50 border border-border">
         <Button variant="ghost" asChild><Link href="/">&larr; Back to Menu</Link></Button>
-        <h1 className="text-4xl font-bold text-primary">Sliding Puzzle</h1>
-        <div className="text-right min-w-[100px]">
-          <p>Score: <span className="font-bold text-accent">{score}</span></p>
-          <p>Moves: <span className="font-bold text-accent">{moves}</span></p>
+        <h1 className="text-4xl font-bold text-primary">{GAME_NAME}</h1>
+        <div className="flex items-center gap-4">
+             <Button variant="outline" asChild><Link href={`/leaderboard/${GAME_ID}`}><Trophy className="mr-2 h-4 w-4" /> Leaderboard</Link></Button>
+            <div className="text-right min-w-[100px]">
+              <p>Score: <span className="font-bold text-accent">{score}</span></p>
+              <p>Moves: <span className="font-bold text-accent">{moves}</span></p>
+            </div>
         </div>
       </div>
 
@@ -137,6 +152,13 @@ export default function Puzzle() {
        {isSolved && (
         <div className="text-center flex flex-col items-center mt-4">
           <h2 className="text-5xl font-bold text-primary mb-4">You Solved It!</h2>
+          <HighScoreDialog
+            open={showHighScoreDialog}
+            onOpenChange={setShowHighScoreDialog}
+            score={score}
+            gameName={GAME_NAME}
+            onSave={(playerName) => addHighScore({ score, playerName })}
+          />
           <p className="text-2xl mb-2">Final Score: {score}</p>
           <p className="text-xl text-muted-foreground mb-6">Total Moves: {moves}</p>
           <Button onClick={initializeGame} size="lg">Play Again</Button>

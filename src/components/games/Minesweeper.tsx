@@ -4,9 +4,14 @@ import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import DifficultyAdjuster from '../DifficultyAdjuster';
-import { Flag, Bomb, Check, X } from 'lucide-react';
+import { Flag, Bomb, Check, X, Trophy } from 'lucide-react';
 import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
 import { Label } from '../ui/label';
+import HighScoreDialog from '../HighScoreDialog';
+import { useHighScores } from '@/hooks/useHighScores';
+
+const GAME_ID = 'minesweeper';
+const GAME_NAME = 'Minesweeper';
 
 type Difficulty = 'beginner' | 'intermediate' | 'expert';
 const DIFFICULTY_SETTINGS = {
@@ -43,6 +48,10 @@ export default function Minesweeper() {
   const [firstClick, setFirstClick] = useState(true);
   const [flagsPlaced, setFlagsPlaced] = useState(0);
   const [timer, setTimer] = useState(0);
+  const [score, setScore] = useState(0);
+  const [showHighScoreDialog, setShowHighScoreDialog] = useState(false);
+  const { isHighScore, addHighScore } = useHighScores(GAME_ID);
+
 
   const { rows, cols, mines } = DIFFICULTY_SETTINGS[difficulty];
 
@@ -73,6 +82,7 @@ export default function Minesweeper() {
     setFirstClick(true);
     setFlagsPlaced(0);
     setTimer(0);
+    setScore(0);
   };
 
   const plantMinesAndCalculateNeighbors = (clickedRow: number, clickedCol: number) => {
@@ -180,8 +190,13 @@ export default function Minesweeper() {
       }
     }
     if (revealedCount === rows * cols - mines) {
+      const finalScore = Math.max(0, 10000 - timer * 10 - (100 - mines));
+      setScore(finalScore);
       setGameWon(true);
       setGameOver(true);
+      if (isHighScore(finalScore)) {
+        setShowHighScoreDialog(true);
+      }
     }
   };
   
@@ -199,8 +214,6 @@ export default function Minesweeper() {
     return { text: "Minesweeper", icon: <Bomb /> };
   }
 
-  const score = gameWon ? Math.max(0, 10000 - timer * 10 - (100 - mines)) : 0;
-  
   return (
     <div className="flex flex-col items-center w-full max-w-5xl">
       <div className="w-full flex justify-between items-center mb-4 p-4 rounded-lg bg-card/50 border border-border">
@@ -209,6 +222,7 @@ export default function Minesweeper() {
             {getStatusMessage().icon} {getStatusMessage().text}
         </h1>
         <div className="text-right min-w-[200px] text-xl font-bold flex justify-end gap-4">
+          <Button variant="outline" asChild><Link href={`/leaderboard/${GAME_ID}`}><Trophy className="mr-2 h-4 w-4" /> Leaderboard</Link></Button>
           <div className="flex items-center gap-2"><Flag className="text-accent" /> <span className="text-accent">{mines - flagsPlaced}</span></div>
           <div className="flex items-center gap-2"><span className="text-primary">Timer:</span> <span className="text-accent">{timer}</span></div>
         </div>
@@ -246,6 +260,13 @@ export default function Minesweeper() {
       </div>
        {(gameOver || gameWon) && (
         <div className="text-center flex flex-col items-center mt-4">
+            <HighScoreDialog
+              open={showHighScoreDialog}
+              onOpenChange={setShowHighScoreDialog}
+              score={score}
+              gameName={GAME_NAME}
+              onSave={(playerName) => addHighScore({ score, playerName })}
+            />
             <Button onClick={resetGame} className="mt-6" size="lg">Play Again</Button>
             {gameWon && (
               <DifficultyAdjuster 
