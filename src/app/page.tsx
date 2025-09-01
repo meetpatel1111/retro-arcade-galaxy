@@ -1,4 +1,4 @@
-import { BrainCircuit, Puzzle, Zap, GitCommitHorizontal, Hammer, X, Rows4 } from 'lucide-react';
+import { BrainCircuit, Puzzle, Zap, GitCommitHorizontal, Hammer, X, Rows4, MoveHorizontal, Bomb } from 'lucide-react';
 import GameCard from '@/components/GameCard';
 import type { Game } from '@/lib/types';
 import Header from '@/components/Header';
@@ -55,6 +55,20 @@ const games: Game[] = [
     description: 'Get four of your discs in a row to win.',
     icon: Rows4,
     href: '/games/connect-four',
+  },
+  {
+    id: 'pong',
+    name: 'Pong',
+    description: 'The original paddle and ball game.',
+    icon: MoveHorizontal,
+    href: '/games/pong',
+  },
+  {
+    id: 'minesweeper',
+    name: 'Minesweeper',
+    description: 'Clear the board without hitting a mine.',
+    icon: Bomb,
+    href: '/games/minesweeper',
   },
 ];
 
