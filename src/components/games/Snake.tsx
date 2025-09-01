@@ -41,26 +41,13 @@ export default function Snake() {
         setDirection(newDirection);
     }
 
-    useEffect(() => {
-        const handleKeyDown = (e: KeyboardEvent) => {
-            switch (e.key) {
-                case 'ArrowUp': if (direction.y === 0) handleSetDirection({ x: 0, y: -1 }); break;
-                case 'ArrowDown': if (direction.y === 0) handleSetDirection({ x: 0, y: 1 }); break;
-                case 'ArrowLeft': if (direction.x === 0) handleSetDirection({ x: -1, y: 0 }); break;
-                case 'ArrowRight': if (direction.x === 0) handleSetDirection({ x: 1, y: 0 }); break;
-            }
-        };
-        document.addEventListener('keydown', handleKeyDown);
-        return () => document.removeEventListener('keydown', handleKeyDown);
-    }, [direction]);
-
-    const startGame = () => {
+    const startGame = useCallback(() => {
         setSnake([{ x: 10, y: 10 }]);
         setFood(getRandomCoord());
         setDirection({ x: 0, y: -1 });
         setScore(0);
         setGameOver(false);
-    };
+    }, []);
 
     const runGame = useCallback(() => {
         if (gameOver) return;
@@ -96,7 +83,7 @@ export default function Snake() {
 
     useEffect(() => {
         startGame();
-    }, [difficulty]);
+    }, [difficulty, startGame]);
     
     useEffect(() => {
         if (gameOver) {
@@ -113,20 +100,37 @@ export default function Snake() {
     }, [runGame, gameOver, difficulty]);
 
     useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            e.preventDefault();
+            switch (e.key) {
+                case 'ArrowUp': if (direction.y === 0) handleSetDirection({ x: 0, y: -1 }); break;
+                case 'ArrowDown': if (direction.y === 0) handleSetDirection({ x: 0, y: 1 }); break;
+                case 'ArrowLeft': if (direction.x === 0) handleSetDirection({ x: -1, y: 0 }); break;
+                case 'ArrowRight': if (direction.x === 0) handleSetDirection({ x: 1, y: 0 }); break;
+            }
+        };
+        document.addEventListener('keydown', handleKeyDown);
+        return () => document.removeEventListener('keydown', handleKeyDown);
+    }, [direction]);
+
+    useEffect(() => {
         const ctx = canvasRef.current?.getContext('2d');
         if (!ctx) return;
         
+        // Clear canvas
         ctx.fillStyle = 'hsl(var(--card))';
         ctx.fillRect(0, 0, GRID_SIZE * TILE_SIZE, GRID_SIZE * TILE_SIZE);
 
+        // Draw snake
         ctx.fillStyle = 'hsl(var(--primary))';
         snake.forEach(segment => {
             ctx.fillRect(segment.x * TILE_SIZE, segment.y * TILE_SIZE, TILE_SIZE -1 , TILE_SIZE -1);
         });
 
+        // Draw food
         ctx.fillStyle = 'hsl(var(--accent))';
         ctx.fillRect(food.x * TILE_SIZE, food.y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
-    }, [snake, food]);
+    }, [snake, food, direction]);
 
     return (
         <div className="flex flex-col items-center w-full max-w-4xl">
@@ -145,7 +149,7 @@ export default function Snake() {
                 className="rounded-lg border-2 border-primary"
             />
              {gameOver && (
-                <div className="text-center flex flex-col items-center mt-4">
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center flex flex-col items-center bg-background/80 p-8 rounded-lg">
                     <h2 className="text-5xl font-bold text-destructive mb-4">Game Over</h2>
                     <p className="text-2xl mb-6">Final Score: {score}</p>
                     <Button onClick={startGame} size="lg">Play Again</Button>
