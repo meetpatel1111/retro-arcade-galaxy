@@ -1,5 +1,6 @@
 "use client"
 
+import { useState, useEffect } from "react";
 import type { HighScore, Game } from "@/lib/types";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -7,6 +8,8 @@ import Link from "next/link";
 import { Button } from "./ui/button";
 import { useHighScores } from "@/hooks/useHighScores";
 import { Trophy } from "lucide-react";
+import { Skeleton } from "./ui/skeleton";
+
 
 interface LeaderboardClientProps {
     game: Game | { id: 'all'; name: 'All Games' };
@@ -14,6 +17,11 @@ interface LeaderboardClientProps {
 
 export default function LeaderboardClient({ game }: LeaderboardClientProps) {
     const { highScores, allScores } = useHighScores();
+    const [hasMounted, setHasMounted] = useState(false);
+
+    useEffect(() => {
+        setHasMounted(true);
+    }, []);
 
     const scoresToShow = game.id === 'all' ? allScores : highScores(game.id);
 
@@ -39,7 +47,17 @@ export default function LeaderboardClient({ game }: LeaderboardClientProps) {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {scoresToShow.length > 0 ? scoresToShow.map((score, index) => (
+                            {!hasMounted ? (
+                                 Array.from({ length: 5 }).map((_, index) => (
+                                    <TableRow key={index}>
+                                        <TableCell><Skeleton className="h-4 w-10" /></TableCell>
+                                        <TableCell><Skeleton className="h-4 w-32" /></TableCell>
+                                        {game.id === 'all' && <TableCell><Skeleton className="h-4 w-24" /></TableCell>}
+                                        <TableCell><Skeleton className="h-4 w-40" /></TableCell>
+                                        <TableCell className="text-right"><Skeleton className="h-4 w-12 ml-auto" /></TableCell>
+                                    </TableRow>
+                                 ))
+                            ) : scoresToShow.length > 0 ? scoresToShow.map((score, index) => (
                                 <TableRow key={index}>
                                     <TableCell className="font-medium text-lg">{index + 1}</TableCell>
                                     <TableCell>{score.playerName}</TableCell>
