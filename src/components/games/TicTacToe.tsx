@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
@@ -12,6 +12,7 @@ import { Trophy, Bot } from 'lucide-react';
 import { useHighScores } from '@/hooks/useHighScores';
 import HighScoreDialog from '../HighScoreDialog';
 import { generateGameBanter } from '@/ai/flows/ai-game-banter';
+import { textToSpeech } from '@/ai/flows/ai-text-to-speech';
 
 const GAME_ID = 'tic-tac-toe';
 const GAME_NAME = 'Tic-Tac-Toe';
@@ -90,13 +91,26 @@ function minimax(squares: Squares, isMaximizing: boolean): { score: number; inde
 function AiBanterBox({ gameOutcome }: { gameOutcome: 'win' | 'loss' | 'draw' | null }) {
     const [banter, setBanter] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
+    const audioRef = useRef<HTMLAudioElement | null>(null);
 
     useEffect(() => {
         if (gameOutcome) {
             setIsLoading(true);
             setBanter(null);
+            if (audioRef.current) {
+              audioRef.current.pause();
+              audioRef.current = null;
+            }
+
             generateGameBanter({ gameName: GAME_NAME, gameOutcome })
-                .then(response => setBanter(response.banter))
+                .then(response => {
+                  setBanter(response.banter)
+                  return textToSpeech({ text: response.banter });
+                })
+                .then(response => {
+                    audioRef.current = new Audio(response.audioDataUri);
+                    audioRef.current.play();
+                })
                 .catch(err => console.error("Error generating banter:", err))
                 .finally(() => setIsLoading(false));
         }
