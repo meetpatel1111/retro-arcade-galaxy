@@ -1,14 +1,15 @@
 'use server';
 /**
- * @fileOverview Generates retro arcade-style banter from an AI Game Master.
+ * @fileOverview Generates retro arcade-style banter from an AI Game Master, including audio.
  *
- * - generateGameBanter - A function that creates commentary for a game's outcome.
+ * - generateGameBanter - A function that creates commentary for a game's outcome with audio.
  * - GenerateGameBanterInput - The input type for the generateGameBanter function.
  * - GenerateGameBanterOutput - The return type for the generateGameBanter function.
  */
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
+import { textToSpeech } from './ai-text-to-speech';
 
 const GenerateGameBanterInputSchema = z.object({
   gameName: z.string().describe('The name of the game that was played.'),
@@ -24,6 +25,11 @@ const GenerateGameBanterOutputSchema = z.object({
   banter: z
     .string()
     .describe('The generated banter from the AI Game Master.'),
+  audioDataUri: z
+    .string()
+    .describe(
+      "The generated audio as a data URI. Expected format: 'data:audio/wav;base64,<encoded_data>'."
+    ),
 });
 export type GenerateGameBanterOutput = z.infer<
   typeof GenerateGameBanterOutputSchema
@@ -37,8 +43,8 @@ export async function generateGameBanter(
 
 const prompt = ai.definePrompt({
   name: 'generateGameBanterPrompt',
-  input: {schema: GenerateGameBanterInputSchema},
-  output: {schema: GenerateGameBanterOutputSchema},
+  input: {schema: z.object({ gameName: z.string(), gameOutcome: z.string() })},
+  output: {schema: z.object({ banter: z.string() })},
   prompt: `You are an enthusiastic and slightly cheesy retro arcade AI Game Master from the 80s. Your job is to provide some fun, thematic commentary after a player finishes a game.
 
 Game: {{{gameName}}}
@@ -61,7 +67,21 @@ const generateGameBanterFlow = ai.defineFlow(
     outputSchema: GenerateGameBanterOutputSchema,
   },
   async input => {
-    const {output} = await prompt(input);
-    return output!;
+    // Run text generation and TTS in parallel
+    const banterPromise = prompt(input);
+    const [banterResult] = await Promise.all([banterPromise]);
+    
+    if (!banterResult.output) {
+      throw new Error("Failed to generate banter text.");
+    }
+    
+    const { banter } = banterResult.output;
+    
+    const audioResult = await textToSpeech({ text: banter });
+
+    return {
+      banter,
+      audioDataUri: audioResult.audioDataUri,
+    };
   }
 );
