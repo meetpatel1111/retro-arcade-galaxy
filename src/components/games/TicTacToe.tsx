@@ -45,36 +45,38 @@ function minimax(squares: Squares, isMaximizing: boolean): { score: number; inde
   if (winner === 'X') return { score: -10 };
   if (isBoardFull(squares)) return { score: 0 };
 
-  const moves: { score: number; index: number }[] = [];
-  for (let i = 0; i < squares.length; i++) {
-    if (squares[i] === null) {
-      const newSquares = [...squares];
-      newSquares[i] = isMaximizing ? 'O' : 'X';
-      const result = minimax(newSquares, !isMaximizing);
-      moves.push({ score: result.score, index: i });
-    }
-  }
-
-  let bestMove: { score: number; index: number };
   if (isMaximizing) {
     let bestScore = -Infinity;
-    for (const move of moves) {
-      if (move.score > bestScore) {
-        bestScore = move.score;
-        bestMove = move;
+    let bestMoveIndex: number | undefined = undefined;
+
+    for (let i = 0; i < squares.length; i++) {
+      if (squares[i] === null) {
+        const newSquares = [...squares];
+        newSquares[i] = 'O';
+        const { score } = minimax(newSquares, false);
+        if (score > bestScore) {
+          bestScore = score;
+          bestMoveIndex = i;
+        }
       }
     }
+    return { score: bestScore, index: bestMoveIndex };
   } else {
     let bestScore = Infinity;
-    for (const move of moves) {
-      if (move.score < bestScore) {
-        bestScore = move.score;
-        bestMove = move;
-      }
+    let bestMoveIndex: number | undefined = undefined;
+    for (let i = 0; i < squares.length; i++) {
+        if (squares[i] === null) {
+            const newSquares = [...squares];
+            newSquares[i] = 'X';
+            const { score } = minimax(newSquares, true);
+            if (score < bestScore) {
+                bestScore = score;
+                bestMoveIndex = i;
+            }
+        }
     }
+    return { score: bestScore, index: bestMoveIndex };
   }
-  // This is a bit of a hack to satisfy TypeScript
-  return bestMove!;
 }
 
 
