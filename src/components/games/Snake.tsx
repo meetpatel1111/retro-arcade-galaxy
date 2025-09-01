@@ -1,12 +1,13 @@
+
 "use client";
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { cn } from '@/lib/utils';
 import DifficultyAdjuster from '../DifficultyAdjuster';
 import { ArrowUp, ArrowDown, ArrowLeft, ArrowRight, Trophy } from 'lucide-react';
 import HighScoreDialog from '../HighScoreDialog';
 import { useHighScores } from '@/hooks/useHighScores';
+import AiBanterBox from '../AiBanterBox';
 
 const GAME_ID = 'snake';
 const GAME_NAME = 'Snake';
@@ -146,6 +147,13 @@ export default function Snake() {
         ctx.fillStyle = `hsl(${accentColor})`;
         ctx.fillRect(food.x * TILE_SIZE, food.y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
     }, [snake, food, isStarted, gameOver]);
+    
+    const getGameOutcome = () => {
+        if (!gameOver) return null;
+        if (score > 50) return 'win'; // Arbitrary win condition for banter
+        return 'loss';
+    }
+
 
     return (
         <div className="flex flex-col items-center w-full max-w-4xl">
@@ -190,6 +198,7 @@ export default function Snake() {
                             currentDifficulty={difficulty}
                             onDifficultyChange={(newDifficulty) => setDifficulty(newDifficulty as Difficulty)}
                         />
+                        <AiBanterBox gameName={GAME_NAME} gameOutcome={getGameOutcome()} />
                     </div>
                 )}
             </div>

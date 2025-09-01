@@ -1,3 +1,4 @@
+
 "use client";
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
@@ -9,6 +10,7 @@ import { Label } from '../ui/label';
 import HighScoreDialog from '../HighScoreDialog';
 import { Trophy } from 'lucide-react';
 import { useHighScores } from '@/hooks/useHighScores';
+import AiBanterBox from '../AiBanterBox';
 
 const ROWS = 6;
 const COLS = 7;
@@ -19,12 +21,6 @@ type Player = '1' | '2';
 type Board = (Player | null)[][];
 type GameMode = 'player' | 'ai';
 type Difficulty = 'beginner' | 'intermediate' | 'expert';
-
-const AI_DIFFICULTY_LEVEL = {
-  beginner: 2,
-  intermediate: 4,
-  expert: 6,
-}
 
 function createEmptyBoard(): Board {
   return Array.from({ length: ROWS }, () => Array(COLS).fill(null));
@@ -75,7 +71,7 @@ export default function ConnectFour() {
   const [currentPlayer, setCurrentPlayer] = useState<Player>('1');
   const [winner, setWinner] = useState<Player | null>(null);
   const [isDraw, setIsDraw] = useState(false);
-  const [gameMode, setGameMode] = useState<GameMode>('player');
+  const [gameMode, setGameMode] = useState<GameMode>('ai');
   const [difficulty, setDifficulty] = useState<Difficulty>('beginner');
   const [showHighScoreDialog, setShowHighScoreDialog] = useState(false);
   const { isHighScore, addHighScore } = useHighScores(GAME_ID);
@@ -151,6 +147,13 @@ export default function ConnectFour() {
 
 
   const score = winner === '1' ? 100 : (winner === '2' ? 0 : 50);
+  
+  const getGameOutcome = () => {
+    if (gameMode !== 'ai' || (!winner && !isDraw)) return null;
+    if (winner === '1') return 'win';
+    if (winner === '2') return 'loss';
+    return 'draw';
+  }
 
   return (
     <div className="flex flex-col items-center w-full max-w-4xl">
@@ -203,12 +206,15 @@ export default function ConnectFour() {
             />
             <Button onClick={handleRestart} className="mt-6" size="lg">Play Again</Button>
             {gameMode === 'ai' && (
-              <DifficultyAdjuster 
-                gameName="Connect Four AI"
-                playerScore={score}
-                currentDifficulty={difficulty}
-                onDifficultyChange={(newDifficulty) => setDifficulty(newDifficulty as Difficulty)}
-              />
+              <>
+                <DifficultyAdjuster 
+                  gameName="Connect Four AI"
+                  playerScore={score}
+                  currentDifficulty={difficulty}
+                  onDifficultyChange={(newDifficulty) => setDifficulty(newDifficulty as Difficulty)}
+                />
+                <AiBanterBox gameName={GAME_NAME} gameOutcome={getGameOutcome()} />
+              </>
             )}
         </div>
       )}

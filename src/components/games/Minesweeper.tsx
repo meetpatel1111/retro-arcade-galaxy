@@ -1,3 +1,4 @@
+
 "use client";
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
@@ -9,6 +10,7 @@ import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
 import { Label } from '../ui/label';
 import HighScoreDialog from '../HighScoreDialog';
 import { useHighScores } from '@/hooks/useHighScores';
+import AiBanterBox from '../AiBanterBox';
 
 const GAME_ID = 'minesweeper';
 const GAME_NAME = 'Minesweeper';
@@ -210,9 +212,16 @@ export default function Minesweeper() {
   
   const getStatusMessage = () => {
     if (gameWon) return { text: "You Win!", icon: <Check className="text-primary"/> };
-    if (gameOver) return { text: "Game Over", icon: <X className="text-destructive"/> };
+    if (gameOver && !gameWon) return { text: "Game Over", icon: <X className="text-destructive"/> };
     return { text: "Minesweeper", icon: <Bomb /> };
   }
+
+  const getGameOutcome = () => {
+    if (!gameOver) return null;
+    if (gameWon) return 'win';
+    return 'loss';
+  }
+
 
   return (
     <div className="flex flex-col items-center w-full max-w-5xl">
@@ -268,14 +277,13 @@ export default function Minesweeper() {
               onSave={(playerName) => addHighScore({ score, playerName })}
             />
             <Button onClick={resetGame} className="mt-6" size="lg">Play Again</Button>
-            {gameWon && (
-              <DifficultyAdjuster 
-                gameName="Minesweeper"
-                playerScore={score}
-                currentDifficulty={difficulty}
-                onDifficultyChange={(newDifficulty) => setDifficulty(newDifficulty as Difficulty)}
-              />
-            )}
+            <DifficultyAdjuster 
+              gameName="Minesweeper"
+              playerScore={score}
+              currentDifficulty={difficulty}
+              onDifficultyChange={(newDifficulty) => setDifficulty(newDifficulty as Difficulty)}
+            />
+            <AiBanterBox gameName={GAME_NAME} gameOutcome={getGameOutcome()} />
         </div>
       )}
     </div>

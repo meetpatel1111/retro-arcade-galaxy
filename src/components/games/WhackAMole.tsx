@@ -8,6 +8,7 @@ import DifficultyAdjuster from '../DifficultyAdjuster';
 import { Hammer, Trophy } from 'lucide-react';
 import { useHighScores } from '@/hooks/useHighScores';
 import HighScoreDialog from '../HighScoreDialog';
+import AiBanterBox from '../AiBanterBox';
 
 const GAME_ID = 'whack-a-mole';
 const GAME_NAME = 'Whack-a-Mole';
@@ -32,7 +33,7 @@ export default function WhackAMole() {
 
     useEffect(() => {
         if (gameOver || timeLeft <= 0) {
-            if (!gameOver) {
+            if (!gameOver && timeLeft <= 0) {
                 setGameOver(true);
                 setMoles([]);
             }
@@ -100,6 +101,12 @@ export default function WhackAMole() {
         addHighScore({ score, playerName });
         setShowHighScoreDialog(false);
     };
+    
+    const getGameOutcome = () => {
+        if (!gameOver || timeLeft > 0) return null;
+        if (score > 100) return 'win'; // Arbitrary win condition
+        return 'loss';
+    }
 
     return (
         <div className="flex flex-col items-center w-full max-w-4xl">
@@ -130,12 +137,15 @@ export default function WhackAMole() {
                     />
                     <Button onClick={startGame} size="lg">Start Game</Button>
                     {score > 0 &&
-                        <DifficultyAdjuster
-                            gameName="Whack-a-Mole"
-                            playerScore={score}
-                            currentDifficulty={difficulty}
-                            onDifficultyChange={(newDifficulty) => setDifficulty(newDifficulty as Difficulty)}
-                        />
+                        <div className="text-center flex flex-col items-center mt-4">
+                            <DifficultyAdjuster
+                                gameName="Whack-a-Mole"
+                                playerScore={score}
+                                currentDifficulty={difficulty}
+                                onDifficultyChange={(newDifficulty) => setDifficulty(newDifficulty as Difficulty)}
+                            />
+                            <AiBanterBox gameName={GAME_NAME} gameOutcome={getGameOutcome()} />
+                        </div>
                     }
                 </div>
             ) : (

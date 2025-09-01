@@ -1,3 +1,4 @@
+
 "use client";
 import { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
@@ -7,6 +8,7 @@ import DifficultyAdjuster from '../DifficultyAdjuster';
 import HighScoreDialog from '../HighScoreDialog';
 import { Trophy } from 'lucide-react';
 import { useHighScores } from '@/hooks/useHighScores';
+import AiBanterBox from '../AiBanterBox';
 
 const GAME_ID = 'puzzle';
 const GAME_NAME = 'Sliding Puzzle';
@@ -120,6 +122,11 @@ export default function Puzzle() {
     }
   };
 
+  const getGameOutcome = () => {
+    if (!isSolved) return null;
+    return 'win';
+  }
+
   return (
     <div className="flex flex-col items-center w-full max-w-4xl">
        <div className="w-full flex justify-between items-center mb-4 p-4 rounded-lg bg-card/50 border border-border">
@@ -168,6 +175,7 @@ export default function Puzzle() {
             currentDifficulty={difficulty}
             onDifficultyChange={(newDifficulty) => setDifficulty(newDifficulty as Difficulty)}
           />
+          <AiBanterBox gameName={GAME_NAME} gameOutcome={getGameOutcome()} />
         </div>
       )}
     </div>

@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect, useRef } from 'react';
@@ -8,6 +9,7 @@ import DifficultyAdjuster from '../DifficultyAdjuster';
 import HighScoreDialog from '../HighScoreDialog';
 import { Trophy } from 'lucide-react';
 import { useHighScores } from '@/hooks/useHighScores';
+import AiBanterBox from '../AiBanterBox';
 
 const GAME_ID = 'quick-reaction';
 const GAME_NAME = 'Quick Reaction';
@@ -93,6 +95,12 @@ export default function QuickReaction() {
     
     const { text, color } = getScreenContent();
 
+    const getGameOutcome = () => {
+        if (gameState === 'clicked') return 'win';
+        if (gameState === 'too-soon') return 'loss';
+        return null;
+    }
+
     return (
         <div className="flex flex-col items-center w-full max-w-4xl">
             <div className="w-full flex justify-between items-center mb-4 p-4 rounded-lg bg-card/50 border border-border">
@@ -121,12 +129,15 @@ export default function QuickReaction() {
             />
 
             {(gameState === 'clicked' || gameState === 'too-soon') && (
-                <DifficultyAdjuster 
-                    gameName="Quick Reaction"
-                    playerScore={score}
-                    currentDifficulty={difficulty}
-                    onDifficultyChange={(newDifficulty) => setDifficulty(newDifficulty as Difficulty)}
-                />
+                <div className="text-center flex flex-col items-center mt-4">
+                    <DifficultyAdjuster 
+                        gameName="Quick Reaction"
+                        playerScore={score}
+                        currentDifficulty={difficulty}
+                        onDifficultyChange={(newDifficulty) => setDifficulty(newDifficulty as Difficulty)}
+                    />
+                    <AiBanterBox gameName={GAME_NAME} gameOutcome={getGameOutcome()} />
+                </div>
             )}
         </div>
     );

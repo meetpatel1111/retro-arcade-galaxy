@@ -1,17 +1,17 @@
 
 "use client";
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import DifficultyAdjuster from '../DifficultyAdjuster';
 import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
 import { Label } from '../ui/label';
-import { Trophy, Bot } from 'lucide-react';
+import { Trophy } from 'lucide-react';
 import { useHighScores } from '@/hooks/useHighScores';
 import HighScoreDialog from '../HighScoreDialog';
-import { generateGameBanter } from '@/ai/flows/ai-game-banter';
+import AiBanterBox from '../AiBanterBox';
 
 const GAME_ID = 'tic-tac-toe';
 const GAME_NAME = 'Tic-Tac-Toe';
@@ -86,55 +86,6 @@ function minimax(squares: Squares, isMaximizing: boolean): { score: number; inde
     return { score: bestScore, index: bestMoveIndex };
   }
 }
-
-function AiBanterBox({ gameOutcome }: { gameOutcome: 'win' | 'loss' | 'draw' | null }) {
-    const [banter, setBanter] = useState<string | null>(null);
-    const [isLoading, setIsLoading] = useState(false);
-    const audioRef = useRef<HTMLAudioElement | null>(null);
-
-    useEffect(() => {
-        if (gameOutcome) {
-            setIsLoading(true);
-            setBanter(null);
-            if (audioRef.current) {
-              audioRef.current.pause();
-              audioRef.current = null;
-            }
-
-            const getBanter = async () => {
-              try {
-                const banterResponse = await generateGameBanter({ gameName: GAME_NAME, gameOutcome });
-                
-                setBanter(banterResponse.banter);
-                
-                audioRef.current = new Audio(banterResponse.audioDataUri);
-                audioRef.current.play();
-              } catch (err) {
-                console.error("Error generating banter:", err);
-                setBanter("Oops! My circuits are buzzing. Try again!");
-              } finally {
-                setIsLoading(false);
-              }
-            };
-            getBanter();
-        }
-    }, [gameOutcome]);
-
-    if (!gameOutcome) return null;
-
-    return (
-        <div className="mt-4 w-full max-w-sm text-center">
-            <div className="flex items-center justify-center gap-2 text-lg font-semibold text-primary">
-                <Bot /> Game Master
-            </div>
-            <div className="mt-2 min-h-[4rem] rounded-md border border-dashed border-accent/30 bg-card/50 p-3 text-sm text-muted-foreground">
-                {isLoading && "Thinking of something witty..."}
-                {banter}
-            </div>
-        </div>
-    );
-}
-
 
 export default function TicTacToe() {
   const [squares, setSquares] = useState<Squares>(Array(9).fill(null));
@@ -321,7 +272,7 @@ export default function TicTacToe() {
                   currentDifficulty={difficulty}
                   onDifficultyChange={(newDifficulty) => setDifficulty(newDifficulty as Difficulty)}
                 />
-                <AiBanterBox gameOutcome={getGameOutcome()} />
+                <AiBanterBox gameName={GAME_NAME} gameOutcome={getGameOutcome()} />
               </>
             )}
         </div>

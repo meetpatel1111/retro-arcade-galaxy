@@ -1,14 +1,15 @@
+
 "use client";
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { cn } from '@/lib/utils';
 import DifficultyAdjuster from '../DifficultyAdjuster';
 import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
 import { Label } from '../ui/label';
 import { ArrowUp, ArrowDown, Trophy } from 'lucide-react';
 import { useHighScores } from '@/hooks/useHighScores';
 import HighScoreDialog from '../HighScoreDialog';
+import AiBanterBox from '../AiBanterBox';
 
 const GAME_ID = 'pong';
 const GAME_NAME = 'Pong';
@@ -251,6 +252,13 @@ export default function Pong() {
 
   const playerScore = scores.player1 * 10 - scores.player2 * 5;
   
+  const getGameOutcome = () => {
+    if (gameMode !== 'ai' || !winner) return null;
+    if (winner === 'Player 1') return 'win';
+    if (winner === 'AI') return 'loss';
+    return null; // Should not happen
+  }
+
   return (
     <div className="flex flex-col items-center w-full max-w-4xl">
       <div className="w-full flex justify-between items-center mb-4 p-4 rounded-lg bg-card/50 border border-border">
@@ -285,12 +293,15 @@ export default function Pong() {
                         />
                         <Button onClick={startGame} size="lg">Play Again</Button>
                         {gameMode === 'ai' && (
-                             <DifficultyAdjuster 
-                                gameName="Pong AI"
-                                playerScore={playerScore}
-                                currentDifficulty={difficulty}
-                                onDifficultyChange={(newDifficulty) => setDifficulty(newDifficulty as Difficulty)}
-                            />
+                             <>
+                                <DifficultyAdjuster 
+                                    gameName="Pong AI"
+                                    playerScore={playerScore}
+                                    currentDifficulty={difficulty}
+                                    onDifficultyChange={(newDifficulty) => setDifficulty(newDifficulty as Difficulty)}
+                                />
+                                <AiBanterBox gameName={GAME_NAME} gameOutcome={getGameOutcome()} />
+                             </>
                         )}
                     </>
                 ) : (
