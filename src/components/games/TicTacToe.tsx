@@ -89,7 +89,7 @@ function minimax(squares: Squares, isMaximizing: boolean): { score: number; inde
 export default function TicTacToe() {
   const [squares, setSquares] = useState<Squares>(Array(9).fill(null));
   const [xIsNext, setXIsNext] = useState(true);
-  const [gameMode, setGameMode] = useState<GameMode>('player');
+  const [gameMode, setGameMode] = useState<GameMode>('ai');
   const [difficulty, setDifficulty] = useState<Difficulty>('beginner');
   const [showHighScoreDialog, setShowHighScoreDialog] = useState(false);
   const { isHighScore, addHighScore } = useHighScores(GAME_ID);
@@ -135,7 +135,14 @@ export default function TicTacToe() {
       const emptySquares = squares.map((s, i) => s === null ? i : null).filter(i => i !== null);
       if (emptySquares.length > 0) {
         const randomIndex = emptySquares[Math.floor(Math.random() * emptySquares.length)]!;
-        setTimeout(() => handleClick(randomIndex), 500);
+        setTimeout(() => {
+            const currentSquares = squares;
+            if (calculateWinner(currentSquares) || isBoardFull(currentSquares)) return;
+            const nextSquares = currentSquares.slice();
+            nextSquares[randomIndex] = 'O';
+            setSquares(nextSquares);
+            setXIsNext(true);
+        }, 500);
       }
     } else { // Intermediate & Expert: use minimax
         // Expert AI is unbeatable, Intermediate has a chance to make a mistake
@@ -143,13 +150,27 @@ export default function TicTacToe() {
              const emptySquares = squares.map((s, i) => s === null ? i : null).filter(i => i !== null);
              if (emptySquares.length > 0) {
                 const randomIndex = emptySquares[Math.floor(Math.random() * emptySquares.length)]!;
-                setTimeout(() => handleClick(randomIndex), 500);
+                setTimeout(() => {
+                    const currentSquares = squares;
+                    if (calculateWinner(currentSquares) || isBoardFull(currentSquares)) return;
+                    const nextSquares = currentSquares.slice();
+                    nextSquares[randomIndex] = 'O';
+                    setSquares(nextSquares);
+                    setXIsNext(true);
+                }, 500);
                 return;
              }
         }
        const bestMove = minimax(squares, true);
        if (bestMove.index !== undefined) {
-         setTimeout(() => handleClick(bestMove.index!), 500);
+         setTimeout(() => {
+            const currentSquares = squares;
+            if (calculateWinner(currentSquares) || isBoardFull(currentSquares)) return;
+            const nextSquares = currentSquares.slice();
+            nextSquares[bestMove.index!] = 'O';
+            setSquares(nextSquares);
+            setXIsNext(true);
+         }, 500);
        }
     }
   };
