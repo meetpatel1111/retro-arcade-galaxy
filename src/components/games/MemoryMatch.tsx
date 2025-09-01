@@ -67,7 +67,7 @@ export default function MemoryMatch() {
   const handleCardClick = (index: number) => {
     if (isChecking || cards[index].isFlipped || cards[index].isMatched) return;
 
-    const newCards = [...cards];
+    let newCards = [...cards];
     newCards[index].isFlipped = true;
     setCards(newCards);
 
@@ -79,14 +79,15 @@ export default function MemoryMatch() {
       setMoves(prev => prev + 1);
 
       const [firstIndex, secondIndex] = newFlippedIndices;
-      const firstCard = cards[firstIndex];
-      const secondCard = cards[secondIndex];
+      const firstCard = newCards[firstIndex];
+      const secondCard = newCards[secondIndex];
 
       if (firstCard.icon === secondCard.icon) {
         setScore(prev => prev + 20);
-        setCards(prev => prev.map(card => 
+        newCards = newCards.map(card => 
           (card.id === firstIndex || card.id === secondIndex) ? { ...card, isMatched: true, isFlipped: true } : card
-        ));
+        );
+        setCards(newCards);
         setFlippedIndices([]);
         setIsChecking(false);
       } else {
