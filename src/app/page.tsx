@@ -1,4 +1,4 @@
-import { BrainCircuit, Puzzle, Zap } from 'lucide-react';
+import { BrainCircuit, Puzzle, Zap, GitCommitHorizontal, Hammer } from 'lucide-react';
 import GameCard from '@/components/GameCard';
 import type { Game } from '@/lib/types';
 import Header from '@/components/Header';
@@ -28,6 +28,20 @@ const games: Game[] = [
     icon: Puzzle,
     href: '/games/puzzle',
   },
+  {
+    id: 'snake',
+    name: 'Snake',
+    description: 'Guide the snake to eat the food and grow.',
+    icon: GitCommitHorizontal,
+    href: '/games/snake',
+  },
+  {
+    id: 'whack-a-mole',
+    name: 'Whack-a-Mole',
+    description: 'Test your reflexes and whack the moles!',
+    icon: Hammer,
+    href: '/games/whack-a-mole',
+  }
 ];
 
 export default function Home() {
