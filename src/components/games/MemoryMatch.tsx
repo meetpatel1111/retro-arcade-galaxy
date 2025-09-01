@@ -27,7 +27,7 @@ type Difficulty = keyof typeof DIFFICULTY_SETTINGS;
 export default function MemoryMatch() {
   const [difficulty, setDifficulty] = useState<Difficulty>('beginner');
   const [cards, setCards] = useState<CardState[]>([]);
-  const [flippedCards, setFlippedCards] = useState<number[]>([]);
+  const [flippedIndices, setFlippedIndices] = useState<number[]>([]);
   const [moves, setMoves] = useState(0);
   const [score, setScore] = useState(0);
   const [gameOver, setGameOver] = useState(false);
@@ -48,14 +48,14 @@ export default function MemoryMatch() {
     );
     setMoves(0);
     setScore(0);
-    setFlippedCards([]);
+    setFlippedIndices([]);
     setGameOver(false);
     setIsChecking(false);
   }, [difficulty]);
 
   useEffect(() => {
     createBoard();
-  }, [difficulty, createBoard]);
+  }, [createBoard]);
 
   useEffect(() => {
     if (cards.length > 0 && cards.every(card => card.isMatched)) {
@@ -63,39 +63,40 @@ export default function MemoryMatch() {
     }
   }, [cards]);
 
-  const handleCardClick = (id: number) => {
-    if (isChecking || flippedCards.length >= 2 || cards[id].isFlipped || cards[id].isMatched) return;
+  const handleCardClick = (index: number) => {
+    if (isChecking || cards[index].isFlipped) return;
 
-    setCards(prevCards => {
-      const newCards = prevCards.map(c => c.id === id ? { ...c, isFlipped: true } : c);
-      const newFlippedCards = [...flippedCards, id];
-      setFlippedCards(newFlippedCards);
+    const newFlippedIndices = [...flippedIndices, index];
+    setFlippedIndices(newFlippedIndices);
 
-      if (newFlippedCards.length === 2) {
-        setIsChecking(true);
-        setMoves(m => m + 1);
-        const [firstId, secondId] = newFlippedCards;
-        const firstCard = newCards.find(c => c.id === firstId);
-        const secondCard = newCards.find(c => c.id === secondId);
+    setCards(prev => prev.map((card, i) => i === index ? { ...card, isFlipped: true } : card));
 
-        if (firstCard && secondCard && firstCard.icon === secondCard.icon) {
-          setScore(s => s + 20);
-          setTimeout(() => {
-            setCards(prev => prev.map(c => (c.icon === firstCard.icon) ? { ...c, isMatched: true, isFlipped: true } : c));
-            setFlippedCards([]);
-            setIsChecking(false);
-          }, 500);
-        } else {
-          setScore(s => Math.max(0, s - 5));
-          setTimeout(() => {
-            setCards(prev => prev.map(c => (c.id === firstId || c.id === secondId) ? { ...c, isFlipped: false } : c));
-            setFlippedCards([]);
-            setIsChecking(false);
-          }, 1000);
-        }
+    if (newFlippedIndices.length === 2) {
+      setIsChecking(true);
+      setMoves(prev => prev + 1);
+
+      const [firstIndex, secondIndex] = newFlippedIndices;
+      const firstCard = cards[firstIndex];
+      const secondCard = cards[secondIndex];
+
+      if (firstCard.icon === secondCard.icon) {
+        setScore(prev => prev + 20);
+        setCards(prev => prev.map(card => 
+          (card.id === firstIndex || card.id === secondIndex) ? { ...card, isMatched: true } : card
+        ));
+        setFlippedIndices([]);
+        setIsChecking(false);
+      } else {
+        setScore(prev => Math.max(0, prev - 5));
+        setTimeout(() => {
+          setCards(prev => prev.map(card =>
+            (card.id === firstIndex || card.id === secondIndex) ? { ...card, isFlipped: false } : card
+          ));
+          setFlippedIndices([]);
+          setIsChecking(false);
+        }, 1000);
       }
-      return newCards;
-    });
+    }
   };
 
   const { grid } = DIFFICULTY_SETTINGS[difficulty];
@@ -113,7 +114,7 @@ export default function MemoryMatch() {
 
       {!gameOver ? (
         <div className={`grid ${grid} gap-4`}>
-          {cards.map((card) => {
+          {cards.map((card, index) => {
             const Icon = card.icon;
             return (
               <div
@@ -122,7 +123,7 @@ export default function MemoryMatch() {
                   'aspect-square rounded-lg cursor-pointer transition-transform duration-500 [transform-style:preserve-3d]',
                   card.isFlipped ? '[transform:rotateY(180deg)]' : ''
                 )}
-                onClick={() => handleCardClick(card.id)}
+                onClick={() => handleCardClick(index)}
               >
                 <div className="absolute w-full h-full [backface-visibility:hidden] flex items-center justify-center rounded-lg bg-secondary hover:bg-secondary/80">
                   <Gamepad2 className="w-1/2 h-1/2 text-primary/50" />
