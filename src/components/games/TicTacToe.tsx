@@ -8,9 +8,10 @@ import { cn } from '@/lib/utils';
 import DifficultyAdjuster from '../DifficultyAdjuster';
 import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
 import { Label } from '../ui/label';
-import { Trophy } from 'lucide-react';
+import { Trophy, Bot } from 'lucide-react';
 import { useHighScores } from '@/hooks/useHighScores';
 import HighScoreDialog from '../HighScoreDialog';
+import { generateGameBanter } from '@/ai/flows/ai-game-banter';
 
 const GAME_ID = 'tic-tac-toe';
 const GAME_NAME = 'Tic-Tac-Toe';
@@ -86,6 +87,36 @@ function minimax(squares: Squares, isMaximizing: boolean): { score: number; inde
   }
 }
 
+function AiBanterBox({ gameOutcome }: { gameOutcome: 'win' | 'loss' | 'draw' | null }) {
+    const [banter, setBanter] = useState<string | null>(null);
+    const [isLoading, setIsLoading] = useState(false);
+
+    useEffect(() => {
+        if (gameOutcome) {
+            setIsLoading(true);
+            setBanter(null);
+            generateGameBanter({ gameName: GAME_NAME, gameOutcome })
+                .then(response => setBanter(response.banter))
+                .catch(err => console.error("Error generating banter:", err))
+                .finally(() => setIsLoading(false));
+        }
+    }, [gameOutcome]);
+
+    if (!gameOutcome) return null;
+
+    return (
+        <div className="mt-4 w-full max-w-sm text-center">
+            <div className="flex items-center justify-center gap-2 text-lg font-semibold text-primary">
+                <Bot /> Game Master
+            </div>
+            <div className="mt-2 min-h-[4rem] rounded-md border border-dashed border-accent/30 bg-card/50 p-3 text-sm text-muted-foreground">
+                {isLoading && "Thinking of something witty..."}
+                {banter}
+            </div>
+        </div>
+    );
+}
+
 
 export default function TicTacToe() {
   const [squares, setSquares] = useState<Squares>(Array(9).fill(null));
@@ -109,7 +140,7 @@ export default function TicTacToe() {
   }
   
   useEffect(() => {
-    if(startTime === null && gameMode === 'ai' && !winner && !isDraw) {
+    if(startTime === null && gameMode === 'ai' && !winner && !isDraw && xIsNext) {
         setStartTime(Date.now());
     }
     
@@ -118,7 +149,7 @@ export default function TicTacToe() {
         const timeTaken = (endTime - startTime) / 1000; // in seconds
         let finalScore = 0;
         if (winner === 'X') {
-            finalScore = Math.max(0, 1000 - Math.floor(timeTaken * 10));
+            finalScore = Math.max(10, 1000 - Math.floor(timeTaken * 10));
         } else if (isDraw) {
             finalScore = 50;
         }
@@ -218,6 +249,12 @@ export default function TicTacToe() {
     );
   };
   
+  const getGameOutcome = () => {
+    if (gameMode !== 'ai' || (!winner && !isDraw)) return null;
+    if (winner === 'X') return 'win';
+    if (winner === 'O') return 'loss';
+    return 'draw';
+  }
 
   return (
      <div className="flex flex-col items-center w-full max-w-4xl">
@@ -259,12 +296,15 @@ export default function TicTacToe() {
             />
             <Button onClick={handleRestart} className="mt-6" size="lg">Play Again</Button>
             {gameMode === 'ai' && (
-              <DifficultyAdjuster 
-                gameName="Tic-Tac-Toe AI"
-                playerScore={score}
-                currentDifficulty={difficulty}
-                onDifficultyChange={(newDifficulty) => setDifficulty(newDifficulty as Difficulty)}
-              />
+              <>
+                <DifficultyAdjuster 
+                  gameName="Tic-Tac-Toe AI"
+                  playerScore={score}
+                  currentDifficulty={difficulty}
+                  onDifficultyChange={(newDifficulty) => setDifficulty(newDifficulty as Difficulty)}
+                />
+                <AiBanterBox gameOutcome={getGameOutcome()} />
+              </>
             )}
         </div>
       )}
