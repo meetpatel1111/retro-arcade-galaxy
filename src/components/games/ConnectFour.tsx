@@ -1,14 +1,25 @@
 "use client";
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
+import DifficultyAdjuster from '../DifficultyAdjuster';
+import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
+import { Label } from '../ui/label';
 
 const ROWS = 6;
 const COLS = 7;
 
 type Player = '1' | '2';
 type Board = (Player | null)[][];
+type GameMode = 'player' | 'ai';
+type Difficulty = 'beginner' | 'intermediate' | 'expert';
+
+const AI_DIFFICULTY_LEVEL = {
+  beginner: 2,
+  intermediate: 4,
+  expert: 6,
+}
 
 function createEmptyBoard(): Board {
   return Array.from({ length: ROWS }, () => Array(COLS).fill(null));
@@ -59,15 +70,21 @@ export default function ConnectFour() {
   const [currentPlayer, setCurrentPlayer] = useState<Player>('1');
   const [winner, setWinner] = useState<Player | null>(null);
   const [isDraw, setIsDraw] = useState(false);
+  const [gameMode, setGameMode] = useState<GameMode>('player');
+  const [difficulty, setDifficulty] = useState<Difficulty>('beginner');
 
   const handleColumnClick = (colIndex: number) => {
-    if (winner || board[0][colIndex]) return;
+    if (winner || board[0][colIndex] || (gameMode === 'ai' && currentPlayer === '2')) return;
 
+    placePiece(colIndex, currentPlayer);
+  };
+
+  const placePiece = (colIndex: number, player: Player) => {
     const newBoard = board.map(row => [...row]);
     let placed = false;
     for (let r = ROWS - 1; r >= 0; r--) {
       if (!newBoard[r][colIndex]) {
-        newBoard[r][colIndex] = currentPlayer;
+        newBoard[r][colIndex] = player;
         placed = true;
         break;
       }
@@ -81,10 +98,10 @@ export default function ConnectFour() {
       } else if (isBoardFull(newBoard)) {
         setIsDraw(true);
       } else {
-        setCurrentPlayer(currentPlayer === '1' ? '2' : '1');
+        setCurrentPlayer(player === '1' ? '2' : '1');
       }
     }
-  };
+  }
   
   const handleRestart = () => {
       setBoard(createEmptyBoard());
@@ -99,15 +116,56 @@ export default function ConnectFour() {
       return `Player ${currentPlayer}'s turn`;
   }
 
+  const aiMove = () => {
+    const availableColumns = [];
+    for (let c = 0; c < COLS; c++) {
+      if (!board[0][c]) {
+        availableColumns.push(c);
+      }
+    }
+
+    if(availableColumns.length > 0) {
+      // Very simple AI: just picks a random valid column
+      const randomColumn = availableColumns[Math.floor(Math.random() * availableColumns.length)];
+      setTimeout(() => placePiece(randomColumn, '2'), 500);
+    }
+  }
+
+  useEffect(() => {
+    if (gameMode === 'ai' && currentPlayer === '2' && !winner && !isDraw) {
+      aiMove();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentPlayer, gameMode, winner, isDraw, board]);
+
+
+  const score = winner === '1' ? 100 : (winner === '2' ? 0 : 50);
+
   return (
     <div className="flex flex-col items-center w-full max-w-4xl">
        <div className="w-full flex justify-between items-center mb-4 p-4 rounded-lg bg-card/50 border border-border">
         <Button variant="ghost" asChild><Link href="/">&larr; Back to Menu</Link></Button>
         <h1 className="text-4xl font-bold text-primary">Connect Four</h1>
         <div className="text-right min-w-[100px]">
+          {/* Placeholder for future score display */}
         </div>
       </div>
       
+      {!winner && !isDraw && (
+        <div className="mb-4">
+          <RadioGroup value={gameMode} onValueChange={(value) => { handleRestart(); setGameMode(value as GameMode) }} className="flex gap-4">
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="player" id="player" />
+              <Label htmlFor="player">2 Players</Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="ai" id="ai" />
+              <Label htmlFor="ai">vs AI</Label>
+            </div>
+          </RadioGroup>
+        </div>
+      )}
+
       <div className="mb-4 text-2xl font-semibold">{getStatusMessage()}</div>
 
       <div className="p-4 bg-secondary rounded-lg grid gap-2" style={{gridTemplateColumns: `repeat(${COLS}, 1fr)`}}>
@@ -124,7 +182,17 @@ export default function ConnectFour() {
       </div>
 
        {(winner || isDraw) && (
-        <Button onClick={handleRestart} className="mt-6" size="lg">Play Again</Button>
+        <div className="text-center flex flex-col items-center mt-4">
+            <Button onClick={handleRestart} className="mt-6" size="lg">Play Again</Button>
+            {gameMode === 'ai' && (
+              <DifficultyAdjuster 
+                gameName="Connect Four AI"
+                playerScore={score}
+                currentDifficulty={difficulty}
+                onDifficultyChange={(newDifficulty) => setDifficulty(newDifficulty as Difficulty)}
+              />
+            )}
+        </div>
       )}
     </div>
   );

@@ -1,11 +1,20 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
+import DifficultyAdjuster from '../DifficultyAdjuster';
+import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
+import { Label } from '../ui/label';
 
-function calculateWinner(squares: (string | null)[]) {
+type Player = 'X' | 'O';
+type Squares = (Player | null)[];
+type GameMode = 'player' | 'ai';
+type Difficulty = 'beginner' | 'intermediate' | 'expert';
+
+
+function calculateWinner(squares: Squares) {
   const lines = [
     [0, 1, 2],
     [3, 4, 5],
@@ -25,13 +34,55 @@ function calculateWinner(squares: (string | null)[]) {
   return null;
 }
 
-function isBoardFull(squares: (string | null)[]) {
+function isBoardFull(squares: Squares) {
   return squares.every(square => square !== null);
 }
 
+// Minimax algorithm for AI
+function minimax(squares: Squares, isMaximizing: boolean): { score: number; index?: number } {
+  const winner = calculateWinner(squares);
+  if (winner === 'O') return { score: 10 };
+  if (winner === 'X') return { score: -10 };
+  if (isBoardFull(squares)) return { score: 0 };
+
+  const moves: { score: number; index: number }[] = [];
+  for (let i = 0; i < squares.length; i++) {
+    if (squares[i] === null) {
+      const newSquares = [...squares];
+      newSquares[i] = isMaximizing ? 'O' : 'X';
+      const result = minimax(newSquares, !isMaximizing);
+      moves.push({ score: result.score, index: i });
+    }
+  }
+
+  let bestMove: { score: number; index: number };
+  if (isMaximizing) {
+    let bestScore = -Infinity;
+    for (const move of moves) {
+      if (move.score > bestScore) {
+        bestScore = move.score;
+        bestMove = move;
+      }
+    }
+  } else {
+    let bestScore = Infinity;
+    for (const move of moves) {
+      if (move.score < bestScore) {
+        bestScore = move.score;
+        bestMove = move;
+      }
+    }
+  }
+  // This is a bit of a hack to satisfy TypeScript
+  return bestMove!;
+}
+
+
 export default function TicTacToe() {
-  const [squares, setSquares] = useState<(string | null)[]>(Array(9).fill(null));
+  const [squares, setSquares] = useState<Squares>(Array(9).fill(null));
   const [xIsNext, setXIsNext] = useState(true);
+  const [gameMode, setGameMode] = useState<GameMode>('player');
+  const [difficulty, setDifficulty] = useState<Difficulty>('beginner');
 
   const winner = calculateWinner(squares);
   const isDraw = !winner && isBoardFull(squares);
@@ -40,13 +91,12 @@ export default function TicTacToe() {
     status = `Winner: ${winner}`;
   } else if (isDraw) {
     status = "It's a Draw!";
-  }
-  else {
+  } else {
     status = `Next player: ${xIsNext ? 'X' : 'O'}`;
   }
 
   function handleClick(i: number) {
-    if (squares[i] || winner) {
+    if (squares[i] || winner || (gameMode === 'ai' && !xIsNext)) {
       return;
     }
     const nextSquares = squares.slice();
@@ -59,6 +109,38 @@ export default function TicTacToe() {
     setSquares(Array(9).fill(null));
     setXIsNext(true);
   }
+
+  const aiMove = () => {
+    // Beginner: random move
+    if (difficulty === 'beginner') {
+      const emptySquares = squares.map((s, i) => s === null ? i : null).filter(i => i !== null);
+      if (emptySquares.length > 0) {
+        const randomIndex = emptySquares[Math.floor(Math.random() * emptySquares.length)]!;
+        setTimeout(() => handleClick(randomIndex), 500);
+      }
+    } else { // Intermediate & Expert: use minimax
+        // Expert AI is unbeatable, Intermediate has a chance to make a mistake
+        if (difficulty === 'intermediate' && Math.random() < 0.3) {
+             const emptySquares = squares.map((s, i) => s === null ? i : null).filter(i => i !== null);
+             if (emptySquares.length > 0) {
+                const randomIndex = emptySquares[Math.floor(Math.random() * emptySquares.length)]!;
+                setTimeout(() => handleClick(randomIndex), 500);
+                return;
+             }
+        }
+       const bestMove = minimax(squares, true);
+       if (bestMove.index !== undefined) {
+         setTimeout(() => handleClick(bestMove.index!), 500);
+       }
+    }
+  };
+
+  useEffect(() => {
+    if (gameMode === 'ai' && !xIsNext && !winner && !isDraw) {
+      aiMove();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [xIsNext, gameMode, winner, isDraw, squares]);
 
   const renderSquare = (i: number) => {
     return (
@@ -75,6 +157,8 @@ export default function TicTacToe() {
       </button>
     );
   };
+  
+  const score = winner === 'X' ? 100 : (winner === 'O' ? 0 : 50);
 
   return (
      <div className="flex flex-col items-center w-full max-w-4xl">
@@ -85,13 +169,38 @@ export default function TicTacToe() {
           {/* Placeholder for score if added later */}
         </div>
       </div>
+      
+       {!winner && !isDraw && (
+        <div className="mb-4">
+          <RadioGroup value={gameMode} onValueChange={(value) => { handleRestart(); setGameMode(value as GameMode) }} className="flex gap-4">
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="player" id="player" />
+              <Label htmlFor="player">2 Players</Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="ai" id="ai" />
+              <Label htmlFor="ai">vs AI</Label>
+            </div>
+          </RadioGroup>
+        </div>
+      )}
 
       <div className="mb-4 text-2xl font-semibold">{status}</div>
       <div className="grid grid-cols-3 gap-2">
         {Array(9).fill(null).map((_, i) => renderSquare(i))}
       </div>
       {(winner || isDraw) && (
-        <Button onClick={handleRestart} className="mt-6" size="lg">Play Again</Button>
+         <div className="text-center flex flex-col items-center mt-4">
+            <Button onClick={handleRestart} className="mt-6" size="lg">Play Again</Button>
+            {gameMode === 'ai' && (
+              <DifficultyAdjuster 
+                gameName="Tic-Tac-Toe AI"
+                playerScore={score}
+                currentDifficulty={difficulty}
+                onDifficultyChange={(newDifficulty) => setDifficulty(newDifficulty as Difficulty)}
+              />
+            )}
+        </div>
       )}
     </div>
   );
