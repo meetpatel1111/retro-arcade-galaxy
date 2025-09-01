@@ -1,4 +1,4 @@
-import { BrainCircuit, Puzzle, Zap, GitCommitHorizontal, Hammer } from 'lucide-react';
+import { BrainCircuit, Puzzle, Zap, GitCommitHorizontal, Hammer, X, Rows4 } from 'lucide-react';
 import GameCard from '@/components/GameCard';
 import type { Game } from '@/lib/types';
 import Header from '@/components/Header';
@@ -7,13 +7,13 @@ import Link from 'next/link';
 import MinigameSuggester from '@/components/MinigameSuggester';
 
 const games: Game[] = [
-  {
-    id: 'memory-match',
-    name: 'Memory Match',
-    description: 'Test your memory and find all the pairs.',
-    icon: BrainCircuit,
-    href: '/games/memory-match',
-  },
+  // {
+  //   id: 'memory-match',
+  //   name: 'Memory Match',
+  //   description: 'Test your memory and find all the pairs.',
+  //   icon: BrainCircuit,
+  //   href: '/games/memory-match',
+  // },
   {
     id: 'quick-reaction',
     name: 'Quick Reaction',
@@ -41,7 +41,21 @@ const games: Game[] = [
     description: 'Test your reflexes and whack the moles!',
     icon: Hammer,
     href: '/games/whack-a-mole',
-  }
+  },
+  {
+    id: 'tic-tac-toe',
+    name: 'Tic-Tac-Toe',
+    description: 'The classic game of Xs and Os.',
+    icon: X,
+    href: '/games/tic-tac-toe',
+  },
+  {
+    id: 'connect-four',
+    name: 'Connect Four',
+    description: 'Get four of your discs in a row to win.',
+    icon: Rows4,
+    href: '/games/connect-four',
+  },
 ];
 
 export default function Home() {
