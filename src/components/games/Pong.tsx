@@ -36,9 +36,9 @@ type GameState = {
 
 type Difficulty = 'beginner' | 'intermediate' | 'expert';
 const DIFFICULTY_SETTINGS = {
-  beginner: { ballSpeed: 4, aiSpeed: 2.5 },
-  intermediate: { ballSpeed: 6, aiSpeed: 4 },
-  expert: { ballSpeed: 8, aiSpeed: 7 },
+  beginner: { ballSpeed: 4, aiSpeed: 2 },
+  intermediate: { ballSpeed: 6, aiSpeed: 3.5 },
+  expert: { ballSpeed: 8, aiSpeed: 6 },
 };
 
 export default function Pong() {
