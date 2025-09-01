@@ -6,6 +6,7 @@ import { Gamepad2, Gift, Ghost, Heart, Star, Sun, Rocket, Bomb, Skull, Crown } f
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
 import { Button } from '../ui/button';
+import { Card, CardContent } from '../ui/card';
 
 const ICONS = [Gamepad2, Gift, Ghost, Heart, Star, Sun, Rocket, Bomb, Skull, Crown];
 
@@ -64,12 +65,14 @@ export default function MemoryMatch() {
   }, [cards]);
 
   const handleCardClick = (index: number) => {
-    if (isChecking || cards[index].isFlipped) return;
+    if (isChecking || cards[index].isFlipped || cards[index].isMatched) return;
+
+    const newCards = [...cards];
+    newCards[index].isFlipped = true;
+    setCards(newCards);
 
     const newFlippedIndices = [...flippedIndices, index];
     setFlippedIndices(newFlippedIndices);
-
-    setCards(prev => prev.map((card, i) => i === index ? { ...card, isFlipped: true } : card));
 
     if (newFlippedIndices.length === 2) {
       setIsChecking(true);
@@ -82,7 +85,7 @@ export default function MemoryMatch() {
       if (firstCard.icon === secondCard.icon) {
         setScore(prev => prev + 20);
         setCards(prev => prev.map(card => 
-          (card.id === firstIndex || card.id === secondIndex) ? { ...card, isMatched: true } : card
+          (card.id === firstIndex || card.id === secondIndex) ? { ...card, isMatched: true, isFlipped: true } : card
         ));
         setFlippedIndices([]);
         setIsChecking(false);
