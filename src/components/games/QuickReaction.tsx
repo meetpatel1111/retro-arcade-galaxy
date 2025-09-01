@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import DifficultyAdjuster from '../DifficultyAdjuster';
 
-type GameState = 'waiting' | 'ready' | 'clicked' | 'too-soon';
+type GameState = 'idle' | 'waiting' | 'ready' | 'clicked' | 'too-soon';
 type Difficulty = 'beginner' | 'intermediate' | 'expert';
 
 const DIFFICULTY_SETTINGS = {
@@ -16,7 +16,7 @@ const DIFFICULTY_SETTINGS = {
 };
 
 export default function QuickReaction() {
-    const [gameState, setGameState] = useState<GameState>('waiting');
+    const [gameState, setGameState] = useState<GameState>('idle');
     const [reactionTime, setReactionTime] = useState<number | null>(null);
     const [difficulty, setDifficulty] = useState<Difficulty>('beginner');
     const timerRef = useRef<NodeJS.Timeout | null>(null);
@@ -35,6 +35,8 @@ export default function QuickReaction() {
     const startGame = () => {
         setGameState('waiting');
         setReactionTime(null);
+        if (timerRef.current) clearTimeout(timerRef.current);
+        
         const {min, max} = DIFFICULTY_SETTINGS[difficulty];
         const waitTime = Math.random() * (max - min) + min;
 
@@ -56,7 +58,7 @@ export default function QuickReaction() {
                 setReactionTime(endTime - startTimeRef.current);
             }
             setGameState('clicked');
-        } else if (gameState === 'clicked' || gameState === 'too-soon') {
+        } else if (gameState === 'idle' || gameState === 'clicked' || gameState === 'too-soon') {
             startGame();
         }
     };

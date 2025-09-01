@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
@@ -7,25 +7,55 @@ import DifficultyAdjuster from '../DifficultyAdjuster';
 
 const TILE_COUNT = 9;
 const GRID_SIZE = 3;
-const SHUFFLE_MOVES = 50;
 
 type Difficulty = 'beginner' | 'intermediate' | 'expert';
 
+const DIFFICULTY_SETTINGS = {
+  beginner: { shuffles: 20 },
+  intermediate: { shuffles: 50 },
+  expert: { shuffles: 100 },
+};
+
 const createSolvedTiles = () => Array.from({ length: TILE_COUNT }, (_, i) => (i === TILE_COUNT - 1 ? null : i + 1));
 
-const shuffleTiles = (tiles: (number | null)[]) => {
-  let newTiles = [...tiles];
-  for (let i = 0; i < SHUFFLE_MOVES; i++) {
-    const emptyIndex = newTiles.indexOf(null);
-    const validMoves = [];
-    if (emptyIndex % GRID_SIZE > 0) validMoves.push(emptyIndex - 1); // left
-    if (emptyIndex % GRID_SIZE < GRID_SIZE - 1) validMoves.push(emptyIndex + 1); // right
-    if (emptyIndex >= GRID_SIZE) validMoves.push(emptyIndex - GRID_SIZE); // up
-    if (emptyIndex < TILE_COUNT - GRID_SIZE) validMoves.push(emptyIndex + GRID_SIZE); // down
+const isSolvable = (tiles: (number|null)[]) => {
+    let product = 1;
+    for (let i = 1, l = TILE_COUNT - 1; i <= l; i++) {
+        for (let j = i + 1, m = l + 1; j <= m; j++) {
+            product *= (tiles.indexOf(i) - tiles.indexOf(j)) / (i - j);
+        }
+    }
+    return product === 1;
+}
 
-    const randomMove = validMoves[Math.floor(Math.random() * validMoves.length)];
-    [newTiles[emptyIndex], newTiles[randomMove]] = [newTiles[randomMove], newTiles[emptyIndex]];
+const shuffleTiles = (tiles: (number | null)[], shuffles: number) => {
+  let newTiles = [...tiles];
+  let solvable = false;
+  while (!solvable) {
+    for (let i = 0; i < shuffles; i++) {
+        const emptyIndex = newTiles.indexOf(null);
+        const validMoves: number[] = [];
+        // left
+        if (emptyIndex % GRID_SIZE > 0) validMoves.push(emptyIndex - 1);
+        // right
+        if (emptyIndex % GRID_SIZE < GRID_SIZE - 1) validMoves.push(emptyIndex + 1);
+        // up
+        if (emptyIndex >= GRID_SIZE) validMoves.push(emptyIndex - GRID_SIZE);
+        // down
+        if (emptyIndex < TILE_COUNT - GRID_SIZE) validMoves.push(emptyIndex + GRID_SIZE);
+
+        const randomMove = validMoves[Math.floor(Math.random() * validMoves.length)];
+        [newTiles[emptyIndex], newTiles[randomMove]] = [newTiles[randomMove], newTiles[emptyIndex]];
+    }
+    // Create a version of the array for the solvability check (replace null with TILE_COUNT)
+    const checkableTiles = newTiles.map(t => t === null ? TILE_COUNT : t);
+    if (isSolvable(checkableTiles)) {
+      solvable = true;
+    } else {
+      newTiles = [...tiles]; // Reset and try again
+    }
   }
+
   return newTiles;
 };
 
@@ -35,16 +65,17 @@ export default function Puzzle() {
   const [isSolved, setIsSolved] = useState(false);
   const [difficulty, setDifficulty] = useState<Difficulty>('beginner');
 
-  const initializeGame = () => {
+  const initializeGame = useCallback(() => {
     const solved = createSolvedTiles();
-    setTiles(shuffleTiles(solved));
+    const shuffles = DIFFICULTY_SETTINGS[difficulty].shuffles;
+    setTiles(shuffleTiles(solved, shuffles));
     setMoves(0);
     setIsSolved(false);
-  };
+  }, [difficulty]);
 
   useEffect(() => {
     initializeGame();
-  }, [difficulty]);
+  }, [initializeGame]);
 
   useEffect(() => {
     const checkSolved = () => {
@@ -61,6 +92,8 @@ export default function Puzzle() {
   const handleTileClick = (index: number) => {
     if (isSolved) return;
     const emptyIndex = tiles.indexOf(null);
+    if(emptyIndex === -1) return;
+
     const isAdjacent =
       (Math.abs(index - emptyIndex) === 1 && Math.floor(index / GRID_SIZE) === Math.floor(emptyIndex / GRID_SIZE)) ||
       (Math.abs(index - emptyIndex) === GRID_SIZE);

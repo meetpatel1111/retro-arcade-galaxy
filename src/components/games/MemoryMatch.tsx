@@ -6,6 +6,7 @@ import { Gamepad2, Gift, Ghost, Heart, Star, Sun, Rocket, Bomb, Skull, Crown } f
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
 import { Button } from '../ui/button';
+import { Card, CardContent } from '../ui/card';
 
 const ICONS = [Gamepad2, Gift, Ghost, Heart, Star, Sun, Rocket, Bomb, Skull, Crown];
 
@@ -83,8 +84,7 @@ export default function MemoryMatch() {
         setScore(s => s + 20);
         
         setTimeout(() => {
-          const updatedCards = newCards.map(c => (c.icon === firstCard.icon) ? { ...c, isMatched: true, isFlipped: true } : c);
-          setCards(updatedCards);
+          setCards(prevCards => prevCards.map(c => (c.icon === firstCard.icon) ? { ...c, isMatched: true, isFlipped: true } : c));
           setFlippedCards([]);
           setIsChecking(false);
         }, 500);

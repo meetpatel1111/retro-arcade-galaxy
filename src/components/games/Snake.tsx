@@ -18,14 +18,20 @@ const DIFFICULTY_SETTINGS = {
 
 type Vector = { x: number; y: number };
 
-const getRandomCoord = (): Vector => ({
-    x: Math.floor(Math.random() * GRID_SIZE),
-    y: Math.floor(Math.random() * GRID_SIZE),
-});
+const getRandomCoord = (snake: Vector[] = []): Vector => {
+    let newFoodPosition;
+    do {
+        newFoodPosition = {
+            x: Math.floor(Math.random() * GRID_SIZE),
+            y: Math.floor(Math.random() * GRID_SIZE),
+        };
+    } while (snake.some(segment => segment.x === newFoodPosition.x && segment.y === newFoodPosition.y));
+    return newFoodPosition;
+};
 
 export default function Snake() {
-    const [snake, setSnake] = useState<Vector[]>([]);
-    const [food, setFood] = useState<Vector>({ x: -1, y: -1 });
+    const [snake, setSnake] = useState<Vector[]>([{ x: 10, y: 10 }]);
+    const [food, setFood] = useState<Vector>(getRandomCoord(snake));
     const [direction, setDirection] = useState<Vector>({ x: 0, y: -1 }); // up
     const [gameOver, setGameOver] = useState(false);
     const [score, setScore] = useState(0);
@@ -43,21 +49,16 @@ export default function Snake() {
     }
 
     const startGame = useCallback(() => {
-        setSnake([{ x: 10, y: 10 }]);
-        setFood(getRandomCoord());
+        const startSnake = [{ x: 10, y: 10 }];
+        setSnake(startSnake);
+        setFood(getRandomCoord(startSnake));
         setDirection({ x: 0, y: -1 });
         setScore(0);
         setGameOver(false);
         setIsStarted(true);
     }, []);
     
-    useEffect(() => {
-        startGame();
-    }, [difficulty, startGame]);
-
     const runGame = useCallback(() => {
-        if (gameOver || !isStarted) return;
-
         setSnake(prevSnake => {
             if (prevSnake.length === 0) return [];
             const newSnake = [...prevSnake];
@@ -79,26 +80,21 @@ export default function Snake() {
 
             if (head.x === food.x && head.y === food.y) {
                 setScore(s => s + 10);
-                let newFoodPosition;
-                do {
-                    newFoodPosition = getRandomCoord();
-                } while (newSnake.some(segment => segment.x === newFoodPosition.x && segment.y === newFoodPosition.y));
-                setFood(newFoodPosition);
+                setFood(getRandomCoord(newSnake));
             } else {
                 newSnake.pop();
             }
             
             return newSnake;
         });
-    }, [direction, food, gameOver, isStarted]);
-
+    }, [direction, food]);
+    
     useEffect(() => {
-        if (!isStarted || gameOver) {
+        if (isStarted && !gameOver) {
+            gameLoopRef.current = setInterval(runGame, DIFFICULTY_SETTINGS[difficulty]);
+        } else {
             if (gameLoopRef.current) clearInterval(gameLoopRef.current);
-            return;
         }
-        
-        gameLoopRef.current = setInterval(runGame, DIFFICULTY_SETTINGS[difficulty]);
         
         return () => {
             if (gameLoopRef.current) clearInterval(gameLoopRef.current);
@@ -107,6 +103,7 @@ export default function Snake() {
 
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
+            if (!isStarted) return;
             e.preventDefault();
             switch (e.key) {
                 case 'ArrowUp': if (direction.y === 0) handleSetDirection({ x: 0, y: -1 }); break;
@@ -117,23 +114,28 @@ export default function Snake() {
         };
         document.addEventListener('keydown', handleKeyDown);
         return () => document.removeEventListener('keydown', handleKeyDown);
-    }, [direction]);
+    }, [direction, isStarted]);
 
     useEffect(() => {
         const ctx = canvasRef.current?.getContext('2d');
         if (!ctx) return;
         
-        ctx.fillStyle = 'hsl(var(--card))';
+        // Use colors from the theme, ensuring they are defined in globals.css
+        const cardColor = getComputedStyle(document.documentElement).getPropertyValue('--card').trim();
+        const primaryColor = getComputedStyle(document.documentElement).getPropertyValue('--primary').trim();
+        const accentColor = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim();
+
+        ctx.fillStyle = `hsl(${cardColor})`;
         ctx.fillRect(0, 0, GRID_SIZE * TILE_SIZE, GRID_SIZE * TILE_SIZE);
 
         if (!isStarted) return;
 
-        ctx.fillStyle = 'hsl(var(--primary))';
+        ctx.fillStyle = `hsl(${primaryColor})`;
         snake.forEach(segment => {
             ctx.fillRect(segment.x * TILE_SIZE, segment.y * TILE_SIZE, TILE_SIZE -1 , TILE_SIZE -1);
         });
 
-        ctx.fillStyle = 'hsl(var(--accent))';
+        ctx.fillStyle = `hsl(${accentColor})`;
         ctx.fillRect(food.x * TILE_SIZE, food.y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
     }, [snake, food, isStarted]);
 
@@ -147,25 +149,32 @@ export default function Snake() {
                 </div>
             </div>
 
-            <canvas
-                ref={canvasRef}
-                width={GRID_SIZE * TILE_SIZE}
-                height={GRID_SIZE * TILE_SIZE}
-                className="rounded-lg border-2 border-primary"
-            />
-             {gameOver && (
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center flex flex-col items-center bg-background/80 p-8 rounded-lg">
-                    <h2 className="text-5xl font-bold text-destructive mb-4">Game Over</h2>
-                    <p className="text-2xl mb-6">Final Score: {score}</p>
-                    <Button onClick={startGame} size="lg">Play Again</Button>
-                     <DifficultyAdjuster 
-                        gameName="Snake"
-                        playerScore={score}
-                        currentDifficulty={difficulty}
-                        onDifficultyChange={(newDifficulty) => setDifficulty(newDifficulty as Difficulty)}
-                    />
-                </div>
-            )}
+            <div className="relative">
+                <canvas
+                    ref={canvasRef}
+                    width={GRID_SIZE * TILE_SIZE}
+                    height={GRID_SIZE * TILE_SIZE}
+                    className="rounded-lg border-2 border-primary"
+                />
+                {!isStarted && !gameOver && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-background/80">
+                         <Button onClick={startGame} size="lg">Start Game</Button>
+                    </div>
+                )}
+                 {gameOver && (
+                    <div className="absolute inset-0 text-center flex flex-col items-center justify-center bg-background/80 p-8 rounded-lg">
+                        <h2 className="text-5xl font-bold text-destructive mb-4">Game Over</h2>
+                        <p className="text-2xl mb-6">Final Score: {score}</p>
+                        <Button onClick={startGame} size="lg">Play Again</Button>
+                         <DifficultyAdjuster 
+                            gameName="Snake"
+                            playerScore={score}
+                            currentDifficulty={difficulty}
+                            onDifficultyChange={(newDifficulty) => setDifficulty(newDifficulty as Difficulty)}
+                        />
+                    </div>
+                )}
+            </div>
             <div className="mt-4 grid grid-cols-3 gap-2 w-48 md:hidden">
                 <div></div>
                 <Button size="icon" className="h-16 w-16" onClick={() => handleSetDirection({ x: 0, y: -1 })}><ArrowUp /></Button>
