@@ -102,17 +102,29 @@ function AiBanterBox({ gameOutcome }: { gameOutcome: 'win' | 'loss' | 'draw' | n
               audioRef.current = null;
             }
 
-            generateGameBanter({ gameName: GAME_NAME, gameOutcome })
-                .then(response => {
-                  setBanter(response.banter)
-                  return textToSpeech({ text: response.banter });
-                })
-                .then(response => {
-                    audioRef.current = new Audio(response.audioDataUri);
-                    audioRef.current.play();
-                })
-                .catch(err => console.error("Error generating banter:", err))
-                .finally(() => setIsLoading(false));
+            const getBanter = async () => {
+              try {
+                const banterResponse = await generateGameBanter({ gameName: GAME_NAME, gameOutcome });
+                const audioResponse = await textToSpeech({ text: banterResponse.banter });
+                
+                setBanter(banterResponse.banter);
+                
+                audioRef.current = new Audio(audioResponse.audioDataUri);
+                audioRef.current.play();
+              } catch (err) {
+                console.error("Error generating banter:", err);
+                // Fallback to just showing text if TTS fails
+                try {
+                  const banterResponse = await generateGameBanter({ gameName: GAME_NAME, gameOutcome });
+                  setBanter(banterResponse.banter);
+                } catch (textErr) {
+                   console.error("Error generating banter text:", textErr);
+                }
+              } finally {
+                setIsLoading(false);
+              }
+            };
+            getBanter();
         }
     }, [gameOutcome]);
 
