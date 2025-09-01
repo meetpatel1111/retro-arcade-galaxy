@@ -6,7 +6,6 @@ import { Gamepad2, Gift, Ghost, Heart, Star, Sun, Rocket, Bomb, Skull, Crown } f
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
 import { Button } from '../ui/button';
-import { Card, CardContent } from '../ui/card';
 
 const ICONS = [Gamepad2, Gift, Ghost, Heart, Star, Sun, Rocket, Bomb, Skull, Crown];
 
@@ -65,39 +64,38 @@ export default function MemoryMatch() {
   }, [cards]);
 
   const handleCardClick = (id: number) => {
-    if (isChecking || flippedCards.length === 2 || cards[id].isFlipped || cards[id].isMatched) return;
+    if (isChecking || flippedCards.length >= 2 || cards[id].isFlipped || cards[id].isMatched) return;
 
-    const newCards = cards.map(c => c.id === id ? { ...c, isFlipped: true } : c);
-    setCards(newCards);
+    setCards(prevCards => {
+      const newCards = prevCards.map(c => c.id === id ? { ...c, isFlipped: true } : c);
+      const newFlippedCards = [...flippedCards, id];
+      setFlippedCards(newFlippedCards);
 
-    const newFlippedCards = [...flippedCards, id];
-    setFlippedCards(newFlippedCards);
+      if (newFlippedCards.length === 2) {
+        setIsChecking(true);
+        setMoves(m => m + 1);
+        const [firstId, secondId] = newFlippedCards;
+        const firstCard = newCards.find(c => c.id === firstId);
+        const secondCard = newCards.find(c => c.id === secondId);
 
-    if (newFlippedCards.length === 2) {
-      setIsChecking(true);
-      setMoves(m => m + 1);
-      const [firstId, secondId] = newFlippedCards;
-      const firstCard = newCards.find(c => c.id === firstId);
-      const secondCard = newCards.find(c => c.id === secondId);
-
-      if (firstCard && secondCard && firstCard.icon === secondCard.icon) {
-        setScore(s => s + 20);
-        
-        setTimeout(() => {
-          setCards(prevCards => prevCards.map(c => (c.icon === firstCard.icon) ? { ...c, isMatched: true, isFlipped: true } : c));
-          setFlippedCards([]);
-          setIsChecking(false);
-        }, 500);
-
-      } else {
-        setScore(s => Math.max(0, s - 5));
-        setTimeout(() => {
-          setCards(prevCards => prevCards.map(c => (c.id === firstId || c.id === secondId) ? { ...c, isFlipped: false } : c));
-          setFlippedCards([]);
-          setIsChecking(false);
-        }, 1000);
+        if (firstCard && secondCard && firstCard.icon === secondCard.icon) {
+          setScore(s => s + 20);
+          setTimeout(() => {
+            setCards(prev => prev.map(c => (c.icon === firstCard.icon) ? { ...c, isMatched: true, isFlipped: true } : c));
+            setFlippedCards([]);
+            setIsChecking(false);
+          }, 500);
+        } else {
+          setScore(s => Math.max(0, s - 5));
+          setTimeout(() => {
+            setCards(prev => prev.map(c => (c.id === firstId || c.id === secondId) ? { ...c, isFlipped: false } : c));
+            setFlippedCards([]);
+            setIsChecking(false);
+          }, 1000);
+        }
       }
-    }
+      return newCards;
+    });
   };
 
   const { grid } = DIFFICULTY_SETTINGS[difficulty];
