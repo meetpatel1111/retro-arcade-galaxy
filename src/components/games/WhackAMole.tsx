@@ -28,58 +28,51 @@ export default function WhackAMole() {
     const [difficulty, setDifficulty] = useState<Difficulty>('beginner');
     const [showHighScoreDialog, setShowHighScoreDialog] = useState(false);
     const { isHighScore, addHighScore } = useHighScores(GAME_ID);
-    const hasCheckedHighScore = useRef(false);
-
-    const stopGame = () => {
-        setGameOver(true);
-        setMoles([]);
-    };
+    const hasProcessedScore = useRef(true);
 
     useEffect(() => {
-        if (gameOver) return;
-
-        let gameTimer: NodeJS.Timeout | null = null;
-        let moleInterval: NodeJS.Timeout | null = null;
-
-        if (timeLeft <= 0) {
-            stopGame();
-        } else {
-            gameTimer = setInterval(() => {
-                setTimeLeft(prev => prev - 1);
-            }, 1000);
-
-            moleInterval = setInterval(() => {
-                setMoles(prevMoles => {
-                    const newMoles = [...prevMoles];
-                    const availableHoles = Array.from({ length: GRID_SIZE }, (_, i) => i).filter(i => !newMoles.includes(i));
-                    if (availableHoles.length === 0) return newMoles;
-
-                    const randomIndex = availableHoles[Math.floor(Math.random() * availableHoles.length)];
-                    newMoles.push(randomIndex);
-
-                    setTimeout(() => {
-                        setMoles(currentMoles => currentMoles.filter(m => m !== randomIndex));
-                    }, DIFFICULTY_SETTINGS[difficulty].duration);
-
-                    return newMoles;
-                });
-            }, DIFFICULTY_SETTINGS[difficulty].interval);
+        if (gameOver || timeLeft <= 0) {
+            if (!gameOver) {
+                setGameOver(true);
+                setMoles([]);
+            }
+            return;
         }
+
+        const gameTimer = setInterval(() => {
+            setTimeLeft(prev => prev - 1);
+        }, 1000);
+
+        const moleInterval = setInterval(() => {
+            setMoles(prevMoles => {
+                const newMoles = [...prevMoles];
+                const availableHoles = Array.from({ length: GRID_SIZE }, (_, i) => i).filter(i => !newMoles.includes(i));
+                if (availableHoles.length === 0) return newMoles;
+
+                const randomIndex = availableHoles[Math.floor(Math.random() * availableHoles.length)];
+                newMoles.push(randomIndex);
+
+                setTimeout(() => {
+                    setMoles(currentMoles => currentMoles.filter(m => m !== randomIndex));
+                }, DIFFICULTY_SETTINGS[difficulty].duration);
+
+                return newMoles;
+            });
+        }, DIFFICULTY_SETTINGS[difficulty].interval);
         
         return () => {
-            if (gameTimer) clearInterval(gameTimer);
-            if (moleInterval) clearInterval(moleInterval);
+            clearInterval(gameTimer);
+            clearInterval(moleInterval);
         };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [gameOver, difficulty, timeLeft]);
 
 
     useEffect(() => {
-        if (gameOver && score > 0 && !hasCheckedHighScore.current) {
+        if (gameOver && !hasProcessedScore.current) {
             if (isHighScore(score)) {
                 setShowHighScoreDialog(true);
             }
-            hasCheckedHighScore.current = true;
+            hasProcessedScore.current = true;
         }
     }, [gameOver, score, isHighScore]);
 
@@ -87,10 +80,10 @@ export default function WhackAMole() {
     const startGame = () => {
         setScore(0);
         setTimeLeft(GAME_DURATION_S);
-        setGameOver(false);
         setMoles([]);
-        hasCheckedHighScore.current = false;
+        hasProcessedScore.current = false;
         setShowHighScoreDialog(false);
+        setGameOver(false);
     };
 
     const whackMole = (index: number) => {
