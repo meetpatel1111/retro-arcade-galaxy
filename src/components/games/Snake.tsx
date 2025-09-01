@@ -80,10 +80,17 @@ export default function Snake() {
             if (prevSnake.length === 0) return [];
             const newSnake = [...prevSnake];
             const head = { 
-                x: (newSnake[0].x + directionRef.current.x + GRID_SIZE) % GRID_SIZE, 
-                y: (newSnake[0].y + directionRef.current.y + GRID_SIZE) % GRID_SIZE 
+                x: newSnake[0].x + directionRef.current.x, 
+                y: newSnake[0].y + directionRef.current.y 
             };
 
+            // Wall collision
+            if (head.x < 0 || head.x >= GRID_SIZE || head.y < 0 || head.y >= GRID_SIZE) {
+                handleGameOver();
+                return prevSnake;
+            }
+            
+            // Self collision
             for (let i = 0; i < newSnake.length; i++) {
                 if (head.x === newSnake[i].x && head.y === newSnake[i].y) {
                     handleGameOver();
