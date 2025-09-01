@@ -24,12 +24,13 @@ const getRandomCoord = (): Vector => ({
 });
 
 export default function Snake() {
-    const [snake, setSnake] = useState<Vector[]>([{ x: 10, y: 10 }]);
-    const [food, setFood] = useState<Vector>(getRandomCoord());
+    const [snake, setSnake] = useState<Vector[]>([]);
+    const [food, setFood] = useState<Vector>({ x: -1, y: -1 });
     const [direction, setDirection] = useState<Vector>({ x: 0, y: -1 }); // up
     const [gameOver, setGameOver] = useState(false);
     const [score, setScore] = useState(0);
     const [difficulty, setDifficulty] = useState<Difficulty>('beginner');
+    const [isStarted, setIsStarted] = useState(false);
     const gameLoopRef = useRef<NodeJS.Timeout | null>(null);
     const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
@@ -47,20 +48,31 @@ export default function Snake() {
         setDirection({ x: 0, y: -1 });
         setScore(0);
         setGameOver(false);
+        setIsStarted(true);
     }, []);
+    
+    useEffect(() => {
+        startGame();
+    }, [difficulty, startGame]);
 
     const runGame = useCallback(() => {
-        if (gameOver) return;
+        if (gameOver || !isStarted) return;
+
         setSnake(prevSnake => {
+            if (prevSnake.length === 0) return [];
             const newSnake = [...prevSnake];
             const head = { 
                 x: (newSnake[0].x + direction.x + GRID_SIZE) % GRID_SIZE, 
                 y: (newSnake[0].y + direction.y + GRID_SIZE) % GRID_SIZE 
             };
 
-            if (newSnake.some(segment => segment.x === head.x && segment.y === head.y)) {
-                setGameOver(true);
-                return prevSnake;
+            // Check for collision with self
+            for (let i = 1; i < newSnake.length; i++) {
+                if (head.x === newSnake[i].x && head.y === newSnake[i].y) {
+                    setGameOver(true);
+                    setIsStarted(false);
+                    return prevSnake;
+                }
             }
 
             newSnake.unshift(head);
@@ -78,26 +90,20 @@ export default function Snake() {
             
             return newSnake;
         });
-    }, [direction, food, gameOver]);
-
+    }, [direction, food, gameOver, isStarted]);
 
     useEffect(() => {
-        startGame();
-    }, [difficulty, startGame]);
-    
-    useEffect(() => {
-        if (gameOver) {
+        if (!isStarted || gameOver) {
             if (gameLoopRef.current) clearInterval(gameLoopRef.current);
             return;
         }
         
-        if (gameLoopRef.current) clearInterval(gameLoopRef.current);
         gameLoopRef.current = setInterval(runGame, DIFFICULTY_SETTINGS[difficulty]);
         
         return () => {
             if (gameLoopRef.current) clearInterval(gameLoopRef.current);
         };
-    }, [runGame, gameOver, difficulty]);
+    }, [isStarted, gameOver, runGame, difficulty]);
 
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
@@ -117,20 +123,19 @@ export default function Snake() {
         const ctx = canvasRef.current?.getContext('2d');
         if (!ctx) return;
         
-        // Clear canvas
         ctx.fillStyle = 'hsl(var(--card))';
         ctx.fillRect(0, 0, GRID_SIZE * TILE_SIZE, GRID_SIZE * TILE_SIZE);
 
-        // Draw snake
+        if (!isStarted) return;
+
         ctx.fillStyle = 'hsl(var(--primary))';
         snake.forEach(segment => {
             ctx.fillRect(segment.x * TILE_SIZE, segment.y * TILE_SIZE, TILE_SIZE -1 , TILE_SIZE -1);
         });
 
-        // Draw food
         ctx.fillStyle = 'hsl(var(--accent))';
         ctx.fillRect(food.x * TILE_SIZE, food.y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
-    }, [snake, food, direction]);
+    }, [snake, food, isStarted]);
 
     return (
         <div className="flex flex-col items-center w-full max-w-4xl">
