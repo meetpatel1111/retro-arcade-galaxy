@@ -6,7 +6,6 @@ import { Gamepad2, Gift, Ghost, Heart, Star, Sun, Rocket, Bomb, Skull, Crown } f
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
 import { Button } from '../ui/button';
-import { Card, CardContent } from '../ui/card';
 
 const ICONS = [Gamepad2, Gift, Ghost, Heart, Star, Sun, Rocket, Bomb, Skull, Crown];
 
@@ -67,7 +66,7 @@ export default function MemoryMatch() {
   const handleCardClick = (index: number) => {
     if (isChecking || cards[index].isFlipped || cards[index].isMatched) return;
 
-    let newCards = [...cards];
+    const newCards = [...cards];
     newCards[index].isFlipped = true;
     setCards(newCards);
 
@@ -84,18 +83,21 @@ export default function MemoryMatch() {
 
       if (firstCard.icon === secondCard.icon) {
         setScore(prev => prev + 20);
-        newCards = newCards.map(card => 
-          (card.id === firstIndex || card.id === secondIndex) ? { ...card, isMatched: true, isFlipped: true } : card
-        );
-        setCards(newCards);
-        setFlippedIndices([]);
-        setIsChecking(false);
+        setTimeout(() => {
+            const matchedCards = newCards.map(card => 
+              (card.id === firstIndex || card.id === secondIndex) ? { ...card, isMatched: true } : card
+            );
+            setCards(matchedCards);
+            setFlippedIndices([]);
+            setIsChecking(false);
+        }, 500);
       } else {
         setScore(prev => Math.max(0, prev - 5));
         setTimeout(() => {
-          setCards(prev => prev.map(card =>
+          const flippedBackCards = newCards.map(card =>
             (card.id === firstIndex || card.id === secondIndex) ? { ...card, isFlipped: false } : card
-          ));
+          );
+          setCards(flippedBackCards);
           setFlippedIndices([]);
           setIsChecking(false);
         }, 1000);
@@ -117,7 +119,7 @@ export default function MemoryMatch() {
       </div>
 
       {!gameOver ? (
-        <div className={`grid ${grid} gap-4`}>
+        <div className={`grid ${grid} gap-4 p-4`}>
           {cards.map((card, index) => {
             const Icon = card.icon;
             return (
