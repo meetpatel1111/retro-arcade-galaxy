@@ -37,10 +37,14 @@ export default function WhackAMole() {
         if (moleIntervalRef.current) clearInterval(moleIntervalRef.current);
         setGameOver(true);
         setMoles([]);
-        if (score > 0 && isHighScore(score)) {
+        // We will check for high score in a separate effect
+    }, []);
+
+    useEffect(() => {
+        if (gameOver && score > 0 && isHighScore(score)) {
             setShowHighScoreDialog(true);
         }
-    }, [score, isHighScore]);
+    }, [gameOver, score, isHighScore]);
 
     useEffect(() => {
         return () => stopGame(); // Cleanup on unmount
@@ -48,19 +52,15 @@ export default function WhackAMole() {
     }, []);
 
     useEffect(() => {
-        if (gameOver || timeLeft <= 0) {
-            if (timeLeft <= 0) stopGame();
+        if (gameOver) return;
+
+        if (timeLeft <= 0) {
+            stopGame();
             return;
-        };
+        }
 
         gameTimerRef.current = setInterval(() => {
-            setTimeLeft(prev => {
-                if (prev <= 1) {
-                    stopGame();
-                    return 0;
-                }
-                return prev - 1;
-            });
+            setTimeLeft(prev => prev - 1);
         }, 1000);
         
         moleIntervalRef.current = setInterval(() => {
@@ -94,6 +94,7 @@ export default function WhackAMole() {
     };
 
     const whackMole = (index: number) => {
+        if (gameOver) return;
         if (moles.includes(index)) {
             setScore(prev => prev + 10);
             setMoles(prevMoles => prevMoles.filter(m => m !== index));
