@@ -44,7 +44,7 @@ export default function LeaderboardClient({ game }: LeaderboardClientProps) {
                                     <TableCell className="font-medium text-lg">{index + 1}</TableCell>
                                     <TableCell>{score.playerName}</TableCell>
                                     {game.id === 'all' && <TableCell>{score.gameName}</TableCell>}
-                                    <TableCell>{new Date(score.date).toLocaleDateString()}</TableCell>
+                                    <TableCell>{new Date(score.date).toLocaleString()}</TableCell>
                                     <TableCell className="text-right font-bold text-accent text-lg">{score.score}</TableCell>
                                 </TableRow>
                             )) : (
