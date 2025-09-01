@@ -19,7 +19,7 @@ const CANVAS_HEIGHT = 400;
 const PADDLE_WIDTH = 10;
 const PADDLE_HEIGHT = 100;
 const BALL_RADIUS = 10;
-const PLAYER_PADDLE_SPEED = 10;
+const PADDLE_SPEED = 6;
 
 type GameState = {
   ballX: number;
@@ -30,13 +30,14 @@ type GameState = {
   paddle2Y: number;
   score1: number;
   score2: number;
-  player1Velocity: number;
+  paddle1Velocity: number;
+  paddle2Velocity: number;
 };
 
 type Difficulty = 'beginner' | 'intermediate' | 'expert';
 const DIFFICULTY_SETTINGS = {
-  beginner: { ballSpeed: 4, aiSpeed: 3 },
-  intermediate: { ballSpeed: 6, aiSpeed: 5 },
+  beginner: { ballSpeed: 4, aiSpeed: 2.5 },
+  intermediate: { ballSpeed: 6, aiSpeed: 4 },
   expert: { ballSpeed: 8, aiSpeed: 7 },
 };
 
@@ -51,7 +52,8 @@ export default function Pong() {
     paddle2Y: CANVAS_HEIGHT / 2 - PADDLE_HEIGHT / 2,
     score1: 0,
     score2: 0,
-    player1Velocity: 0,
+    paddle1Velocity: 0,
+    paddle2Velocity: 0,
   });
   const [scores, setScores] = useState({ player1: 0, player2: 0 });
   const [gameOver, setGameOver] = useState(true);
@@ -61,12 +63,11 @@ export default function Pong() {
   const [showHighScoreDialog, setShowHighScoreDialog] = useState(false);
   const { isHighScore, addHighScore } = useHighScores(GAME_ID);
 
-  const resetBall = useCallback(() => {
+  const resetBall = useCallback((direction: 'left' | 'right') => {
     const gs = gameStateRef.current;
     gs.ballX = CANVAS_WIDTH / 2;
     gs.ballY = CANVAS_HEIGHT / 2;
-    // Serve to the player who just scored
-    gs.ballSpeedX = (gs.ballSpeedX > 0 ? -1 : 1) * DIFFICULTY_SETTINGS[difficulty].ballSpeed;
+    gs.ballSpeedX = (direction === 'left' ? -1 : 1) * DIFFICULTY_SETTINGS[difficulty].ballSpeed;
     gs.ballSpeedY = (Math.random() > 0.5 ? 1 : -1) * (DIFFICULTY_SETTINGS[difficulty].ballSpeed / 2);
   }, [difficulty]);
 
@@ -79,7 +80,7 @@ export default function Pong() {
     setWinner(null);
     gs.paddle1Y = CANVAS_HEIGHT / 2 - PADDLE_HEIGHT / 2;
     gs.paddle2Y = CANVAS_HEIGHT / 2 - PADDLE_HEIGHT / 2;
-    resetBall();
+    resetBall(Math.random() > 0.5 ? 'left' : 'right');
   }, [resetBall]);
   
   const gameLoop = useCallback(() => {
@@ -92,22 +93,23 @@ export default function Pong() {
     gs.ballX += gs.ballSpeedX;
     gs.ballY += gs.ballSpeedY;
 
-    // Move player paddle
-    gs.paddle1Y += gs.player1Velocity;
+    // Move paddles
+    gs.paddle1Y += gs.paddle1Velocity;
     if (gs.paddle1Y < 0) gs.paddle1Y = 0;
     if (gs.paddle1Y > CANVAS_HEIGHT - PADDLE_HEIGHT) gs.paddle1Y = CANVAS_HEIGHT - PADDLE_HEIGHT;
 
+    gs.paddle2Y += gs.paddle2Velocity;
+    if (gs.paddle2Y < 0) gs.paddle2Y = 0;
+    if (gs.paddle2Y > CANVAS_HEIGHT - PADDLE_HEIGHT) gs.paddle2Y = CANVAS_HEIGHT - PADDLE_HEIGHT;
 
     // AI movement
     if (gameMode === 'ai') {
       const paddleCenter = gs.paddle2Y + PADDLE_HEIGHT / 2;
-      if (paddleCenter < gs.ballY - 35) {
+      if (paddleCenter < gs.ballY - 20) {
         gs.paddle2Y += aiSpeed;
-      } else if (paddleCenter > gs.ballY + 35) {
+      } else if (paddleCenter > gs.ballY + 20) {
         gs.paddle2Y -= aiSpeed;
       }
-       if (gs.paddle2Y < 0) gs.paddle2Y = 0;
-       if (gs.paddle2Y > CANVAS_HEIGHT - PADDLE_HEIGHT) gs.paddle2Y = CANVAS_HEIGHT - PADDLE_HEIGHT;
     }
     
     // Ball collision with top/bottom walls
@@ -116,9 +118,8 @@ export default function Pong() {
     }
 
     // Ball collision with paddles
-    // Player 1 paddle
     if (
-      gs.ballX - BALL_RADIUS < PADDLE_WIDTH &&
+      gs.ballX - BALL_RADIUS < PADDLE_WIDTH && gs.ballX - BALL_RADIUS > 0 &&
       gs.ballY > gs.paddle1Y &&
       gs.ballY < gs.paddle1Y + PADDLE_HEIGHT
     ) {
@@ -127,9 +128,8 @@ export default function Pong() {
       gs.ballSpeedY = deltaY * 0.35;
     }
     
-    // Player 2 / AI paddle
     if (
-        gs.ballX + BALL_RADIUS > CANVAS_WIDTH - PADDLE_WIDTH &&
+        gs.ballX + BALL_RADIUS > CANVAS_WIDTH - PADDLE_WIDTH && gs.ballX + BALL_RADIUS < CANVAS_WIDTH &&
         gs.ballY > gs.paddle2Y &&
         gs.ballY < gs.paddle2Y + PADDLE_HEIGHT
     ) {
@@ -142,19 +142,19 @@ export default function Pong() {
     if (gs.ballX < 0) {
       gs.score2++;
       setScores({ player1: gs.score1, player2: gs.score2 });
-      resetBall();
+      resetBall('left');
     } else if (gs.ballX > CANVAS_WIDTH) {
       gs.score1++;
       setScores({ player1: gs.score1, player2: gs.score2 });
-      resetBall();
+      resetBall('right');
     }
     
     // Check for winner
     if (gs.score1 >= WINNING_SCORE) {
       setWinner('Player 1');
       setGameOver(true);
-      const score = gameMode === 'ai' ? gs.score1 * 10 - gs.score2 * 5 : 0;
-      if (gameMode === 'ai' && isHighScore(score)) {
+      const score = gs.score1 * 10 - gs.score2 * 5;
+      if (isHighScore(score)) {
           setShowHighScoreDialog(true);
       }
     } else if (gs.score2 >= WINNING_SCORE) {
@@ -174,7 +174,6 @@ export default function Pong() {
     ctx.fillStyle = cardColor;
     ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
     
-    // Dashed line
     ctx.strokeStyle = primaryColor;
     ctx.setLineDash([10, 10]);
     ctx.beginPath();
@@ -183,13 +182,12 @@ export default function Pong() {
     ctx.stroke();
     ctx.setLineDash([]);
     
-    // Paddles
     ctx.fillStyle = primaryColor;
     ctx.fillRect(0, gs.paddle1Y, PADDLE_WIDTH, PADDLE_HEIGHT);
+    
+    ctx.fillStyle = accentColor;
     ctx.fillRect(CANVAS_WIDTH - PADDLE_WIDTH, gs.paddle2Y, PADDLE_WIDTH, PADDLE_HEIGHT);
     
-    // Ball
-    ctx.fillStyle = accentColor;
     ctx.beginPath();
     ctx.arc(gs.ballX, gs.ballY, BALL_RADIUS, 0, Math.PI * 2);
     ctx.fill();
@@ -204,18 +202,54 @@ export default function Pong() {
     }
   }, [gameOver, gameLoop]);
 
+   useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if(gameOver) return;
+      // Player 1 controls
+      if (e.key === 'ArrowUp') {
+        gameStateRef.current.paddle1Velocity = -PADDLE_SPEED;
+      } else if (e.key === 'ArrowDown') {
+        gameStateRef.current.paddle1Velocity = PADDLE_SPEED;
+      }
+      // Player 2 controls
+      if (gameMode === 'player') {
+         if (e.key === 'w') {
+            gameStateRef.current.paddle2Velocity = -PADDLE_SPEED;
+        } else if (e.key === 's') {
+            gameStateRef.current.paddle2Velocity = PADDLE_SPEED;
+        }
+      }
+    };
+    const handleKeyUp = (e: KeyboardEvent) => {
+       if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+        gameStateRef.current.paddle1Velocity = 0;
+      }
+      if (gameMode === 'player') {
+        if (e.key === 'w' || e.key === 's') {
+            gameStateRef.current.paddle2Velocity = 0;
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keyup', handleKeyUp);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keyup', handleKeyUp);
+    };
+  }, [gameOver, gameMode]);
 
-  const handlePlayerMove = (direction: 'up' | 'down' | 'stop') => {
+
+  const handlePlayer1Move = (direction: 'up' | 'down' | 'stop') => {
     if (direction === 'up') {
-      gameStateRef.current.player1Velocity = -PLAYER_PADDLE_SPEED;
+      gameStateRef.current.paddle1Velocity = -PADDLE_SPEED;
     } else if (direction === 'down') {
-      gameStateRef.current.player1Velocity = PLAYER_PADDLE_SPEED;
+      gameStateRef.current.paddle1Velocity = PADDLE_SPEED;
     } else {
-      gameStateRef.current.player1Velocity = 0;
+      gameStateRef.current.paddle1Velocity = 0;
     }
   };
 
-  const playerScore = gameMode === 'ai' ? scores.player1 * 10 - scores.player2 * 5 : 0;
+  const playerScore = scores.player1 * 10 - scores.player2 * 5;
   
   return (
     <div className="flex flex-col items-center w-full max-w-4xl">
@@ -230,7 +264,7 @@ export default function Pong() {
         </div>
       </div>
       
-      <div className="relative w-full aspect-[3/2] max-w-[600px]">
+      <div className="relative w-full max-w-[600px] aspect-[3/2]">
         <canvas
           ref={canvasRef}
           width={CANVAS_WIDTH}
@@ -264,6 +298,10 @@ export default function Pong() {
                         <h2 className="text-5xl font-bold text-primary mb-4">Pong</h2>
                          <div className="mb-4">
                             <RadioGroup value={gameMode} onValueChange={(value) => { setGameMode(value as 'player' | 'ai') }} className="flex gap-4">
+                                 <div className="flex items-center space-x-2">
+                                <RadioGroupItem value="player" id="player" />
+                                <Label htmlFor="player">2 Players</Label>
+                                </div>
                                 <div className="flex items-center space-x-2">
                                 <RadioGroupItem value="ai" id="ai" />
                                 <Label htmlFor="ai">vs AI</Label>
@@ -278,23 +316,24 @@ export default function Pong() {
       </div>
 
       <div className="mt-4 flex flex-col items-center gap-2">
-          <p className="text-sm text-muted-foreground">Controls</p>
+          <p className="text-sm text-muted-foreground">Controls: Arrow Keys or Buttons</p>
+           {gameMode === 'player' && <p className="text-sm text-muted-foreground">Player 2: W & S Keys</p>}
           <div className="flex gap-4">
              <Button
                 size="lg"
-                onMouseDown={() => handlePlayerMove('up')}
-                onMouseUp={() => handlePlayerMove('stop')}
-                onTouchStart={(e) => { e.preventDefault(); handlePlayerMove('up'); }}
-                onTouchEnd={(e) => { e.preventDefault(); handlePlayerMove('stop'); }}
+                onMouseDown={() => handlePlayer1Move('up')}
+                onMouseUp={() => handlePlayer1Move('stop')}
+                onTouchStart={(e) => { e.preventDefault(); handlePlayer1Move('up'); }}
+                onTouchEnd={(e) => { e.preventDefault(); handlePlayer1Move('stop'); }}
             >
                 <ArrowUp /> Up
             </Button>
             <Button
                 size="lg"
-                onMouseDown={() => handlePlayerMove('down')}
-                onMouseUp={() => handlePlayerMove('stop')}
-                onTouchStart={(e) => { e.preventDefault(); handlePlayerMove('down'); }}
-                onTouchEnd={(e) => { e.preventDefault(); handlePlayerMove('stop'); }}
+                onMouseDown={() => handlePlayer1Move('down')}
+                onMouseUp={() => handlePlayer1Move('stop')}
+                onTouchStart={(e) => { e.preventDefault(); handlePlayer1Move('down'); }}
+                onTouchEnd={(e) => { e.preventDefault(); handlePlayer1Move('stop'); }}
             >
                 <ArrowDown /> Down
             </Button>

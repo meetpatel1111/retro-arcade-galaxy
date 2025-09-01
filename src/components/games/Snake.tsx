@@ -43,16 +43,16 @@ export default function Snake() {
     const [isStarted, setIsStarted] = useState(false);
     const [showHighScoreDialog, setShowHighScoreDialog] = useState(false);
     const { isHighScore, addHighScore } = useHighScores(GAME_ID);
-    const gameLoopRef = useRef<NodeJS.Timeout | null>(null);
+    const directionRef = useRef(direction);
     const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
-    const handleSetDirection = (newDirection: Vector) => {
-        // Prevent snake from reversing on itself
-        if (direction.x === -newDirection.x && direction.y === -newDirection.y) {
+    const handleSetDirection = useCallback((newDirection: Vector) => {
+        const currentDirection = directionRef.current;
+        if (currentDirection.x === -newDirection.x && currentDirection.y === -newDirection.y) {
             return;
         }
-        setDirection(newDirection);
-    }
+        directionRef.current = newDirection;
+    }, []);
     
     const handleGameOver = useCallback(() => {
         setGameOver(true);
@@ -66,6 +66,7 @@ export default function Snake() {
         const startSnake = [{ x: 10, y: 10 }];
         setSnake(startSnake);
         setFood(getRandomCoord(startSnake));
+        directionRef.current = { x: 0, y: -1 };
         setDirection({ x: 0, y: -1 });
         setScore(0);
         setGameOver(false);
@@ -73,16 +74,16 @@ export default function Snake() {
     }, []);
     
     const runGame = useCallback(() => {
+        setDirection(directionRef.current);
         setSnake(prevSnake => {
             if (prevSnake.length === 0) return [];
             const newSnake = [...prevSnake];
             const head = { 
-                x: (newSnake[0].x + direction.x + GRID_SIZE) % GRID_SIZE, 
-                y: (newSnake[0].y + direction.y + GRID_SIZE) % GRID_SIZE 
+                x: (newSnake[0].x + directionRef.current.x + GRID_SIZE) % GRID_SIZE, 
+                y: (newSnake[0].y + directionRef.current.y + GRID_SIZE) % GRID_SIZE 
             };
 
-            // Check for collision with self
-            for (let i = 1; i < newSnake.length; i++) {
+            for (let i = 0; i < newSnake.length; i++) {
                 if (head.x === newSnake[i].x && head.y === newSnake[i].y) {
                     handleGameOver();
                     return prevSnake;
@@ -100,18 +101,13 @@ export default function Snake() {
             
             return newSnake;
         });
-    }, [direction, food, handleGameOver]);
+    }, [food, handleGameOver]);
     
     useEffect(() => {
         if (isStarted && !gameOver) {
-            gameLoopRef.current = setInterval(runGame, DIFFICULTY_SETTINGS[difficulty]);
-        } else {
-            if (gameLoopRef.current) clearInterval(gameLoopRef.current);
+            const gameLoop = setInterval(runGame, DIFFICULTY_SETTINGS[difficulty]);
+            return () => clearInterval(gameLoop);
         }
-        
-        return () => {
-            if (gameLoopRef.current) clearInterval(gameLoopRef.current);
-        };
     }, [isStarted, gameOver, runGame, difficulty]);
 
     useEffect(() => {
@@ -119,21 +115,20 @@ export default function Snake() {
             if (!isStarted) return;
             e.preventDefault();
             switch (e.key) {
-                case 'ArrowUp': if (direction.y === 0) handleSetDirection({ x: 0, y: -1 }); break;
-                case 'ArrowDown': if (direction.y === 0) handleSetDirection({ x: 0, y: 1 }); break;
-                case 'ArrowLeft': if (direction.x === 0) handleSetDirection({ x: -1, y: 0 }); break;
-                case 'ArrowRight': if (direction.x === 0) handleSetDirection({ x: 1, y: 0 }); break;
+                case 'ArrowUp': handleSetDirection({ x: 0, y: -1 }); break;
+                case 'ArrowDown': handleSetDirection({ x: 0, y: 1 }); break;
+                case 'ArrowLeft': handleSetDirection({ x: -1, y: 0 }); break;
+                case 'ArrowRight': handleSetDirection({ x: 1, y: 0 }); break;
             }
         };
         document.addEventListener('keydown', handleKeyDown);
         return () => document.removeEventListener('keydown', handleKeyDown);
-    }, [direction, isStarted]);
+    }, [isStarted, handleSetDirection]);
 
     useEffect(() => {
         const ctx = canvasRef.current?.getContext('2d');
         if (!ctx) return;
         
-        // Use colors from the theme, ensuring they are defined in globals.css
         const cardColor = getComputedStyle(document.documentElement).getPropertyValue('--card').trim();
         const primaryColor = getComputedStyle(document.documentElement).getPropertyValue('--primary').trim();
         const accentColor = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim();
@@ -141,7 +136,7 @@ export default function Snake() {
         ctx.fillStyle = `hsl(${cardColor})`;
         ctx.fillRect(0, 0, GRID_SIZE * TILE_SIZE, GRID_SIZE * TILE_SIZE);
 
-        if (!isStarted) return;
+        if (!isStarted && !gameOver) return;
 
         ctx.fillStyle = `hsl(${primaryColor})`;
         snake.forEach(segment => {
@@ -150,7 +145,7 @@ export default function Snake() {
 
         ctx.fillStyle = `hsl(${accentColor})`;
         ctx.fillRect(food.x * TILE_SIZE, food.y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
-    }, [snake, food, isStarted]);
+    }, [snake, food, isStarted, gameOver]);
 
     return (
         <div className="flex flex-col items-center w-full max-w-4xl">
@@ -198,7 +193,7 @@ export default function Snake() {
                     </div>
                 )}
             </div>
-            <div className="mt-4 grid grid-cols-3 gap-2 w-48 md:hidden">
+            <div className="mt-4 grid grid-cols-3 gap-2 w-48">
                 <div></div>
                 <Button size="icon" className="h-16 w-16" onClick={() => handleSetDirection({ x: 0, y: -1 })}><ArrowUp /></Button>
                 <div></div>
@@ -206,6 +201,7 @@ export default function Snake() {
                 <Button size="icon" className="h-16 w-16" onClick={() => handleSetDirection({ x: 0, y: 1 })}><ArrowDown /></Button>
                 <Button size="icon" className="h-16 w-16" onClick={() => handleSetDirection({ x: 1, y: 0 })}><ArrowRight /></Button>
             </div>
+             <p className="text-sm text-muted-foreground mt-2">Controls: Arrow Keys or Buttons</p>
         </div>
     );
 }
