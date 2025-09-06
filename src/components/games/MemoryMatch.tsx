@@ -154,7 +154,7 @@ export default function MemoryMatch() {
                 onOpenChange={setShowHighScoreDialog}
                 score={score + levelScore}
                 gameName={GAME_NAME}
-                onSave={(playerName) => addHighScore({ score: score + levelScore, playerName })}
+                onSave={(playerName, avatar) => addHighScore({ score: score + levelScore, playerName, avatarDataUri: avatar })}
             />
             <p className="text-2xl mb-2">Final Score: {score}</p>
             <Button onClick={() => initializeGame(1)} size="lg">Start Game</Button>

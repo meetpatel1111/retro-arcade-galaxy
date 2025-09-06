@@ -10,6 +10,8 @@ import { useHighScores } from "@/hooks/useHighScores";
 import { Trophy } from "lucide-react";
 import { Skeleton } from "./ui/skeleton";
 import PlayerBackstory from "./PlayerBackstory";
+import Image from 'next/image';
+import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 
 
 interface LeaderboardClientProps {
@@ -63,7 +65,15 @@ export default function LeaderboardClient({ game }: LeaderboardClientProps) {
                             ) : scoresToShow.length > 0 ? scoresToShow.map((score, index) => (
                                 <TableRow key={index}>
                                     <TableCell className="font-medium text-lg">{index + 1}</TableCell>
-                                    <TableCell>{score.playerName}</TableCell>
+                                    <TableCell className="flex items-center gap-4">
+                                        <Avatar>
+                                            {score.avatarDataUri ? (
+                                                <AvatarImage src={score.avatarDataUri} alt={`${score.playerName}'s avatar`} />
+                                            ) : null}
+                                            <AvatarFallback>{score.playerName.charAt(0)}</AvatarFallback>
+                                        </Avatar>
+                                        {score.playerName}
+                                    </TableCell>
                                     {game.id === 'all' && <TableCell>{score.gameName}</TableCell>}
                                     <TableCell>{new Date(score.date).toLocaleString()}</TableCell>
                                     <TableCell className="text-right font-bold text-accent text-lg">{score.score}</TableCell>

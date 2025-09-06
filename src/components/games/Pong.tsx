@@ -316,7 +316,7 @@ export default function Pong() {
                             onOpenChange={setShowHighScoreDialog}
                             score={playerScore}
                             gameName={GAME_NAME}
-                            onSave={(playerName) => addHighScore({ score: playerScore, playerName })}
+                            onSave={(playerName, avatar) => addHighScore({ score: playerScore, playerName, avatarDataUri: avatar })}
                         />
                         <Button onClick={startGame} size="lg">Play Again</Button>
                         {gameMode === 'ai' && (

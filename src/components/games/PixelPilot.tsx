@@ -213,7 +213,7 @@ export default function PixelPilot() {
               onOpenChange={setShowHighScoreDialog}
               score={score}
               gameName={GAME_NAME}
-              onSave={(name) => addHighScore({ playerName: name, score })}
+              onSave={(name, avatar) => addHighScore({ playerName: name, score, avatarDataUri: avatar })}
             />
             <Button onClick={resetGame} size="lg">Start Game</Button>
             <div className="flex flex-col items-center mt-4">

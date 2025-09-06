@@ -237,7 +237,7 @@ export default function TwentyFortyEight() {
                   onOpenChange={setShowHighScoreDialog}
                   score={score}
                   gameName={GAME_NAME}
-                  onSave={(name) => addHighScore({ playerName: name, score })}
+                  onSave={(name, avatar) => addHighScore({ playerName: name, score, avatarDataUri: avatar })}
                 />
                 <div className="flex gap-4">
                    {gameWon && !gameOver && <Button onClick={() => setGameOver(true)} size="lg">Keep Playing</Button>}

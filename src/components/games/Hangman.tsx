@@ -198,7 +198,7 @@ export default function Hangman() {
                         onOpenChange={setShowHighScoreDialog}
                         score={score}
                         gameName={GAME_NAME}
-                        onSave={(playerName) => addHighScore({ score, playerName })}
+                        onSave={(playerName, avatar) => addHighScore({ score, playerName, avatarDataUri: avatar })}
                     />
                     <Button onClick={startGame} size="lg">Play Again</Button>
                     <DifficultyAdjuster

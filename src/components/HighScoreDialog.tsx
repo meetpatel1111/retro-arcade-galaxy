@@ -12,21 +12,24 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import PlayerAvatar from './PlayerAvatar';
 
 interface HighScoreDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   score: number;
   gameName: string;
-  onSave: (playerName: string) => void;
+  onSave: (playerName: string, avatarDataUri?: string) => void;
 }
 
 export default function HighScoreDialog({ open, onOpenChange, score, gameName, onSave }: HighScoreDialogProps) {
   const [playerName, setPlayerName] = useState("");
+  const [avatarDataUri, setAvatarDataUri] = useState<string | undefined>();
 
   const handleSave = () => {
-    onSave(playerName.trim() || "Player");
+    onSave(playerName.trim() || "Player", avatarDataUri);
     setPlayerName("");
+    setAvatarDataUri(undefined);
     onOpenChange(false);
   };
 
@@ -45,6 +48,7 @@ export default function HighScoreDialog({ open, onOpenChange, score, gameName, o
                 <p className='text-sm text-muted-foreground'>Your Score</p>
                 <p className='text-4xl font-bold text-primary'>{score}</p>
             </div>
+            <PlayerAvatar playerName={playerName} onAvatarGenerated={setAvatarDataUri} />
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="name" className="text-right">
               Name

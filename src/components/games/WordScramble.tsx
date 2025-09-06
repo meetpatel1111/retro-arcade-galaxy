@@ -131,7 +131,7 @@ export default function WordScramble() {
             onOpenChange={setShowHighScoreDialog}
             score={score}
             gameName={GAME_NAME}
-            onSave={(playerName) => addHighScore({ score, playerName })}
+            onSave={(playerName, avatar) => addHighScore({ score, playerName, avatarDataUri: avatar })}
           />
           <Button onClick={startGame} size="lg">Start Game</Button>
           {score > 0 &&

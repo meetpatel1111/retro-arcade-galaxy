@@ -125,7 +125,7 @@ export default function QuickReaction() {
                 onOpenChange={setShowHighScoreDialog}
                 score={score}
                 gameName={GAME_NAME}
-                onSave={(playerName) => addHighScore({ score, playerName })}
+                onSave={(playerName, avatar) => addHighScore({ score, playerName, avatarDataUri: avatar })}
             />
 
             {(gameState === 'clicked' || gameState === 'too-soon') && (

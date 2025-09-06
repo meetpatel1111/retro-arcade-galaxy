@@ -209,7 +209,7 @@ export default function Snake() {
                             onOpenChange={setShowHighScoreDialog}
                             score={score}
                             gameName={GAME_NAME}
-                            onSave={(playerName) => addHighScore({ score, playerName })}
+                            onSave={(playerName, avatar) => addHighScore({ score, playerName, avatarDataUri: avatar })}
                         />
                         <div className="flex gap-4">
                             <Button onClick={startGame} size="lg">Play Again</Button>

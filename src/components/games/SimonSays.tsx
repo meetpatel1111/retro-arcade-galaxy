@@ -139,7 +139,7 @@ export default function SimonSays() {
                         onOpenChange={setShowHighScoreDialog}
                         score={score}
                         gameName={GAME_NAME}
-                        onSave={(name) => addHighScore({ score, playerName: name })}
+                        onSave={(playerName, avatar) => addHighScore({ score, playerName, avatarDataUri: avatar })}
                     />
                     <Button onClick={startGame} size="lg">Start Game</Button>
                     {score > 0 &&

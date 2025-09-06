@@ -274,7 +274,7 @@ export default function Minesweeper() {
               onOpenChange={setShowHighScoreDialog}
               score={score}
               gameName={GAME_NAME}
-              onSave={(playerName) => addHighScore({ score, playerName })}
+              onSave={(playerName, avatar) => addHighScore({ score, playerName, avatarDataUri: avatar })}
             />
             <Button onClick={resetGame} className="mt-6" size="lg">Play Again</Button>
             <DifficultyAdjuster 

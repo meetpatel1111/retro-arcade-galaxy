@@ -171,7 +171,7 @@ export default function RockPaperScissors() {
                         onOpenChange={setShowHighScoreDialog}
                         score={finalScore}
                         gameName={GAME_NAME}
-                        onSave={(playerName) => addHighScore({ score: finalScore, playerName })}
+                        onSave={(playerName, avatar) => addHighScore({ score: finalScore, playerName, avatarDataUri: avatar })}
                     />
                     <Button onClick={restartGame} size="lg">Play Again</Button>
                     <DifficultyAdjuster

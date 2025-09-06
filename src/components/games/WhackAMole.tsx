@@ -119,11 +119,6 @@ export default function WhackAMole() {
         setScore(prev => Math.max(0, prev - 5));
       }
     };
-
-    const handleSaveScore = (playerName: string) => {
-        addHighScore({ score, playerName });
-        setShowHighScoreDialog(false);
-    };
     
     const getGameOutcome = () => {
         if (!gameOver || timeLeft > 0) return null;
@@ -157,7 +152,7 @@ export default function WhackAMole() {
                         onOpenChange={setShowHighScoreDialog}
                         score={score}
                         gameName={GAME_NAME}
-                        onSave={handleSaveScore}
+                        onSave={(playerName, avatar) => addHighScore({ score, playerName, avatarDataUri: avatar })}
                     />
                     <Button onClick={startGame} size="lg">Start Game</Button>
                     {score > 0 &&

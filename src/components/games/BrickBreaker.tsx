@@ -436,7 +436,7 @@ export default function BrickBreaker() {
                             onOpenChange={setShowHighScoreDialog}
                             score={score}
                             gameName={GAME_NAME}
-                            onSave={(name) => addHighScore({ playerName: name, score })}
+                            onSave={(name, avatar) => addHighScore({ playerName: name, score, avatarDataUri: avatar })}
                         />
                          <div className="flex gap-4">
                             <Button onClick={startGame} size="lg">Start Game</Button>

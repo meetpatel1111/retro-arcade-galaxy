@@ -193,7 +193,7 @@ export default function TypingSpeedTest() {
                 onOpenChange={setShowHighScoreDialog}
                 score={score}
                 gameName={GAME_NAME}
-                onSave={(playerName) => addHighScore({ score, playerName })}
+                onSave={(playerName, avatar) => addHighScore({ score, playerName, avatarDataUri: avatar })}
             />
             <DifficultyAdjuster
                 gameName={GAME_NAME}

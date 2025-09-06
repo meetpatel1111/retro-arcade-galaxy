@@ -12,4 +12,5 @@ export type HighScore = {
   score: number;
   playerName: string;
   date: string;
+  avatarDataUri?: string;
 };

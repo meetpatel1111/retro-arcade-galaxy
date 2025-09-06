@@ -238,7 +238,7 @@ export default function ConnectFour() {
                 onOpenChange={setShowHighScoreDialog}
                 score={score}
                 gameName={GAME_NAME}
-                onSave={(playerName) => addHighScore({ score, playerName })}
+                onSave={(playerName, avatar) => addHighScore({ score, playerName, avatarDataUri: avatar })}
             />
             <Button onClick={handleRestart} className="mt-6" size="lg">Play Again</Button>
             {gameMode === 'ai' && (

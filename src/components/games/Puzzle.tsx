@@ -164,7 +164,7 @@ export default function Puzzle() {
             onOpenChange={setShowHighScoreDialog}
             score={score}
             gameName={GAME_NAME}
-            onSave={(playerName) => addHighScore({ score, playerName })}
+            onSave={(playerName, avatar) => addHighScore({ score, playerName, avatarDataUri: avatar })}
           />
           <p className="text-2xl mb-2">Final Score: {score}</p>
           <p className="text-xl text-muted-foreground mb-6">Total Moves: {moves}</p>
