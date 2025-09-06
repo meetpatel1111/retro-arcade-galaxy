@@ -39,8 +39,11 @@ const generateAvatarFlow = ai.defineFlow(
   },
   async ({ playerName }) => {
     const { media } = await ai.generate({
-      model: googleAI.model('imagen-4.0-fast-generate-001'),
+      model: googleAI.model('gemini-2.5-flash-image-preview'),
       prompt: `Generate a retro 8-bit pixel art avatar for a video game character named "${playerName}". The avatar should be a headshot, suitable for a leaderboard profile picture. It should be colorful and have a classic arcade game feel. The background should be a simple, solid color.`,
+      config: {
+        responseModalities: ['IMAGE'],
+      },
     });
 
     if (!media) {
