@@ -75,7 +75,7 @@ export default function BrickBreaker() {
         gameState.current.bricks = createBricks();
     }
 
-    const resetBallAndPaddle = () => {
+    const resetBallAndPaddle = useCallback(() => {
         const gs = gameState.current;
         const { ballSpeed } = DIFFICULTY_SETTINGS[difficulty];
         gs.ballX = CANVAS_WIDTH / 2;
@@ -83,7 +83,7 @@ export default function BrickBreaker() {
         gs.ballDX = ballSpeed * (Math.random() < 0.5 ? 1 : -1);
         gs.ballDY = -ballSpeed;
         gs.paddleX = (CANVAS_WIDTH - PADDLE_WIDTH) / 2;
-    }
+    }, [difficulty]);
 
     const startGame = useCallback(() => {
         setScore(0);
@@ -92,7 +92,7 @@ export default function BrickBreaker() {
         resetBricks();
         resetBallAndPaddle();
         setGameOver(false);
-    }, [difficulty]);
+    }, [resetBallAndPaddle]);
     
     const draw = useCallback(() => {
         const ctx = canvasRef.current?.getContext('2d');
@@ -167,13 +167,16 @@ export default function BrickBreaker() {
             if (gs.ballX > gs.paddleX && gs.ballX < gs.paddleX + PADDLE_WIDTH) {
                 gs.ballDY = -gs.ballDY;
             } else {
-                setLives(l => l - 1);
-                if (lives - 1 <= 0) {
-                    setGameOver(true);
-                    if (isHighScore(score)) setShowHighScoreDialog(true);
-                } else {
-                    resetBallAndPaddle();
-                }
+                setLives(l => {
+                    const newLives = l - 1;
+                    if (newLives <= 0) {
+                        setGameOver(true);
+                        if (isHighScore(score)) setShowHighScoreDialog(true);
+                    } else {
+                        resetBallAndPaddle();
+                    }
+                    return newLives;
+                });
             }
         }
         
@@ -201,7 +204,7 @@ export default function BrickBreaker() {
         if (bricksLeft === 1) { // 1 because the brick that was just hit is not yet removed from count
             setGameWon(true);
             setGameOver(true);
-            if(isHighScore(score)) setShowHighScoreDialog(true);
+            if(isHighScore(score + 10)) setShowHighScoreDialog(true); // +10 for the last brick
         }
 
         gs.ballX += gs.ballDX;
@@ -209,7 +212,7 @@ export default function BrickBreaker() {
         
         draw();
         requestAnimationFrame(gameLoop);
-    }, [draw, difficulty, gameOver, lives, score, isHighScore, resetBallAndPaddle]);
+    }, [draw, difficulty, gameOver, score, isHighScore, resetBallAndPaddle]);
     
     useEffect(() => {
         if (!gameOver) {

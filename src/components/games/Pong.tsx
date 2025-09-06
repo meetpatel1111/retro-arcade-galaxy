@@ -47,8 +47,8 @@ export default function Pong() {
   const gameStateRef = useRef<GameState>({
     ballX: CANVAS_WIDTH / 2,
     ballY: CANVAS_HEIGHT / 2,
-    ballSpeedX: 5,
-    ballSpeedY: 5,
+    ballSpeedX: 0,
+    ballSpeedY: 0,
     paddle1Y: CANVAS_HEIGHT / 2 - PADDLE_HEIGHT / 2,
     paddle2Y: CANVAS_HEIGHT / 2 - PADDLE_HEIGHT / 2,
     score1: 0,
@@ -84,6 +84,39 @@ export default function Pong() {
     resetBall(Math.random() > 0.5 ? 'left' : 'right');
   }, [resetBall]);
   
+  const draw = useCallback(() => {
+    const canvas = canvasRef.current;
+    const ctx = canvas?.getContext('2d');
+    if (!ctx) return;
+
+    const gs = gameStateRef.current;
+    
+    const cardColor = `hsl(${getComputedStyle(document.documentElement).getPropertyValue('--card').trim()})`;
+    const primaryColor = `hsl(${getComputedStyle(document.documentElement).getPropertyValue('--primary').trim()})`;
+    const accentColor = `hsl(${getComputedStyle(document.documentElement).getPropertyValue('--accent').trim()})`;
+
+    ctx.fillStyle = cardColor;
+    ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+    
+    ctx.strokeStyle = primaryColor;
+    ctx.setLineDash([10, 10]);
+    ctx.beginPath();
+    ctx.moveTo(CANVAS_WIDTH / 2, 0);
+    ctx.lineTo(CANVAS_WIDTH / 2, CANVAS_HEIGHT);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    
+    ctx.fillStyle = primaryColor;
+    ctx.fillRect(0, gs.paddle1Y, PADDLE_WIDTH, PADDLE_HEIGHT);
+    
+    ctx.fillStyle = accentColor;
+    ctx.fillRect(CANVAS_WIDTH - PADDLE_WIDTH, gs.paddle2Y, PADDLE_WIDTH, PADDLE_HEIGHT);
+    
+    ctx.beginPath();
+    ctx.arc(gs.ballX, gs.ballY, BALL_RADIUS, 0, Math.PI * 2);
+    ctx.fill();
+  }, [])
+
   const gameLoop = useCallback(() => {
     if (gameOver) return;
 
@@ -120,7 +153,7 @@ export default function Pong() {
 
     // Ball collision with paddles
     if (
-      gs.ballX - BALL_RADIUS < PADDLE_WIDTH && gs.ballX - BALL_RADIUS > 0 &&
+      gs.ballX - BALL_RADIUS < PADDLE_WIDTH + 5 && gs.ballX - BALL_RADIUS > 0 &&
       gs.ballY > gs.paddle1Y &&
       gs.ballY < gs.paddle1Y + PADDLE_HEIGHT
     ) {
@@ -130,7 +163,7 @@ export default function Pong() {
     }
     
     if (
-        gs.ballX + BALL_RADIUS > CANVAS_WIDTH - PADDLE_WIDTH && gs.ballX + BALL_RADIUS < CANVAS_WIDTH &&
+        gs.ballX + BALL_RADIUS > CANVAS_WIDTH - PADDLE_WIDTH - 5 && gs.ballX + BALL_RADIUS < CANVAS_WIDTH &&
         gs.ballY > gs.paddle2Y &&
         gs.ballY < gs.paddle2Y + PADDLE_HEIGHT
     ) {
@@ -163,38 +196,13 @@ export default function Pong() {
       setGameOver(true);
     }
 
-    // Draw everything
-    const canvas = canvasRef.current;
-    const ctx = canvas?.getContext('2d');
-    if (!ctx) return;
-    
-    const cardColor = `hsl(${getComputedStyle(document.documentElement).getPropertyValue('--card').trim()})`;
-    const primaryColor = `hsl(${getComputedStyle(document.documentElement).getPropertyValue('--primary').trim()})`;
-    const accentColor = `hsl(${getComputedStyle(document.documentElement).getPropertyValue('--accent').trim()})`;
-
-    ctx.fillStyle = cardColor;
-    ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-    
-    ctx.strokeStyle = primaryColor;
-    ctx.setLineDash([10, 10]);
-    ctx.beginPath();
-    ctx.moveTo(CANVAS_WIDTH / 2, 0);
-    ctx.lineTo(CANVAS_WIDTH / 2, CANVAS_HEIGHT);
-    ctx.stroke();
-    ctx.setLineDash([]);
-    
-    ctx.fillStyle = primaryColor;
-    ctx.fillRect(0, gs.paddle1Y, PADDLE_WIDTH, PADDLE_HEIGHT);
-    
-    ctx.fillStyle = accentColor;
-    ctx.fillRect(CANVAS_WIDTH - PADDLE_WIDTH, gs.paddle2Y, PADDLE_WIDTH, PADDLE_HEIGHT);
-    
-    ctx.beginPath();
-    ctx.arc(gs.ballX, gs.ballY, BALL_RADIUS, 0, Math.PI * 2);
-    ctx.fill();
-
+    draw();
     requestAnimationFrame(gameLoop);
-  }, [gameOver, difficulty, resetBall, gameMode, isHighScore]);
+  }, [gameOver, difficulty, resetBall, gameMode, isHighScore, draw]);
+
+  useEffect(() => {
+    draw();
+  }, [draw])
 
   useEffect(() => {
     if (!gameOver) {
