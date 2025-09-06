@@ -5,9 +5,14 @@ Welcome to Retro Arcade Galaxy, your portal to classic arcade fun with a modern,
 ## ✨ Features
 
 -   **A Growing Collection of Games**: Play timeless classics like Snake, Tic-Tac-Toe, Pong, Minesweeper, and more.
--   **AI Game Master**: Get fun, retro-style banter and commentary from an AI Game Master after each game, complete with audio.
+-   **AI Game Master with Multi-Speaker Banter**: Get fun, retro-style banter from two distinct AI personalities after each game, complete with conversational audio.
 -   **AI-Powered Difficulty Adjustment**: Let the AI dynamically adjust the game's difficulty based on your performance.
+-   **AI-Generated Avatars**: Create a unique, 8-bit pixel art avatar for your leaderboard profile.
+-   **AI-Generated "Legendary Moment" Images**: Immortalize your high score with a unique, AI-generated image celebrating your achievement.
+-   **AI-Generated Puzzle Images**: The Sliding Puzzle game features unique, AI-generated images for a new challenge every time.
 -   **AI Minigame Suggestions**: Get creative new minigame ideas based on your playing history.
+-   **AI Cheat Codes & Player Backstories**: Discover fun, retro-style cheat codes and generate epic backstories for your player profile.
+-   **Dynamic Word Games**: Games like Hangman, Word Scramble, and Typing Speed Test use AI to generate endless new words and challenges.
 -   **High Score Leaderboards**: Compete for the top spot on the leaderboard for each game. Your scores are saved locally in your browser.
 -   **Responsive Design**: Play on your desktop, laptop, or mobile device with keyboard and touch support.
 
@@ -23,6 +28,15 @@ Welcome to Retro Arcade Galaxy, your portal to classic arcade fun with a modern,
 - Minesweeper
 - Memory Match
 - Word Scramble
+- Rock Paper Scissors
+- Hangman
+- Simon Says
+- Brick Breaker
+- Typing Speed Test
+- Pixel Pilot
+- 2048
+- Space Invaders
+
 
 ## 🛠️ Tech Stack
 
