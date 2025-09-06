@@ -1,5 +1,5 @@
 import type { Game } from '@/lib/types';
-import { BrainCircuit, Puzzle, Zap, GitCommitHorizontal, Hammer, X, Rows4, MoveHorizontal, Bomb, Star, CaseSensitive, Scissors, VenetianMask, Pointer, Dice5 } from 'lucide-react';
+import { BrainCircuit, Puzzle, Zap, GitCommitHorizontal, Hammer, X, Rows4, MoveHorizontal, Bomb, Star, CaseSensitive, Scissors, VenetianMask, Pointer, Dice5, Keyboard, Plane } from 'lucide-react';
 
 export const GAMES: Game[] = [
   {
@@ -99,5 +99,19 @@ export const GAMES: Game[] = [
     description: 'Break all the bricks to win.',
     icon: Pointer,
     href: '/games/brick-breaker',
+  },
+  {
+    id: 'typing-speed-test',
+    name: 'Typing Speed Test',
+    description: 'Test your typing speed and accuracy.',
+    icon: Keyboard,
+    href: '/games/typing-speed-test',
+  },
+  {
+    id: 'pixel-pilot',
+    name: 'Pixel Pilot',
+    description: 'Navigate your ship through the obstacles.',
+    icon: Plane,
+    href: '/games/pixel-pilot',
   },
 ];
