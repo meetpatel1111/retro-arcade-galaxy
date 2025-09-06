@@ -6,9 +6,12 @@ import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import DifficultyAdjuster from '../DifficultyAdjuster';
 import HighScoreDialog from '../HighScoreDialog';
-import { Trophy } from 'lucide-react';
+import { Trophy, Check, RefreshCw } from 'lucide-react';
 import { useHighScores } from '@/hooks/useHighScores';
 import AiBanterBox from '../AiBanterBox';
+import { generatePuzzleImage } from '@/ai/flows/ai-generate-puzzle-image';
+import Image from 'next/image';
+import { Skeleton } from '../ui/skeleton';
 
 const GAME_ID = 'puzzle';
 const GAME_NAME = 'Sliding Puzzle';
@@ -23,63 +26,52 @@ const DIFFICULTY_SETTINGS = {
   expert: { shuffles: 100 },
 };
 
-const createSolvedTiles = () => Array.from({ length: TILE_COUNT }, (_, i) => (i === TILE_COUNT - 1 ? null : i + 1));
-
-const isSolvable = (tiles: (number|null)[]) => {
-    let product = 1;
-    for (let i = 1, l = TILE_COUNT - 1; i <= l; i++) {
-        for (let j = i + 1, m = l + 1; j <= m; j++) {
-            product *= (tiles.indexOf(i) - tiles.indexOf(j)) / (i - j);
-        }
-    }
-    return product === 1;
-}
+const createSolvedTiles = () => Array.from({ length: TILE_COUNT }, (_, i) => (i === TILE_COUNT - 1 ? null : i));
 
 const shuffleTiles = (tiles: (number | null)[], shuffles: number) => {
   let newTiles = [...tiles];
-  let solvable = false;
-  while (!solvable) {
-    for (let i = 0; i < shuffles; i++) {
-        const emptyIndex = newTiles.indexOf(null);
-        const validMoves: number[] = [];
-        // left
-        if (emptyIndex % GRID_SIZE > 0) validMoves.push(emptyIndex - 1);
-        // right
-        if (emptyIndex % GRID_SIZE < GRID_SIZE - 1) validMoves.push(emptyIndex + 1);
-        // up
-        if (emptyIndex >= GRID_SIZE) validMoves.push(emptyIndex - GRID_SIZE);
-        // down
-        if (emptyIndex < TILE_COUNT - GRID_SIZE) validMoves.push(emptyIndex + GRID_SIZE);
+  for (let i = 0; i < shuffles * 2; i++) { // Increased shuffles for better randomness
+      const emptyIndex = newTiles.indexOf(null);
+      const validMoves: number[] = [];
+      if (emptyIndex % GRID_SIZE > 0) validMoves.push(emptyIndex - 1);
+      if (emptyIndex % GRID_SIZE < GRID_SIZE - 1) validMoves.push(emptyIndex + 1);
+      if (emptyIndex >= GRID_SIZE) validMoves.push(emptyIndex - GRID_SIZE);
+      if (emptyIndex < TILE_COUNT - GRID_SIZE) validMoves.push(emptyIndex + GRID_SIZE);
 
-        const randomMove = validMoves[Math.floor(Math.random() * validMoves.length)];
-        [newTiles[emptyIndex], newTiles[randomMove]] = [newTiles[randomMove], newTiles[emptyIndex]];
-    }
-    // Create a version of the array for the solvability check (replace null with TILE_COUNT)
-    const checkableTiles = newTiles.map(t => t === null ? TILE_COUNT : t);
-    if (isSolvable(checkableTiles)) {
-      solvable = true;
-    } else {
-      newTiles = [...tiles]; // Reset and try again
-    }
+      const randomMove = validMoves[Math.floor(Math.random() * validMoves.length)];
+      [newTiles[emptyIndex], newTiles[randomMove]] = [newTiles[randomMove], newTiles[emptyIndex]];
   }
-
   return newTiles;
 };
 
 export default function Puzzle() {
   const [tiles, setTiles] = useState<(number | null)[]>([]);
+  const [imageTiles, setImageTiles] = useState<string[]>([]);
+  const [mainImage, setMainImage] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [moves, setMoves] = useState(0);
   const [isSolved, setIsSolved] = useState(false);
   const [difficulty, setDifficulty] = useState<Difficulty>('beginner');
   const [showHighScoreDialog, setShowHighScoreDialog] = useState(false);
   const { isHighScore, addHighScore } = useHighScores(GAME_ID);
 
-  const initializeGame = useCallback(() => {
-    const solved = createSolvedTiles();
-    const shuffles = DIFFICULTY_SETTINGS[difficulty].shuffles;
-    setTiles(shuffleTiles(solved, shuffles));
+  const initializeGame = useCallback(async () => {
+    setIsLoading(true);
     setMoves(0);
     setIsSolved(false);
+    try {
+        const { mainImageUri, tiles } = await generatePuzzleImage();
+        setMainImage(mainImageUri);
+        setImageTiles(tiles);
+        const solved = createSolvedTiles();
+        const shuffles = DIFFICULTY_SETTINGS[difficulty].shuffles;
+        setTiles(shuffleTiles(solved, shuffles));
+    } catch (e) {
+        console.error("Failed to generate puzzle image", e);
+        // Handle error, maybe show a fallback
+    } finally {
+        setIsLoading(false);
+    }
   }, [difficulty]);
 
   useEffect(() => {
@@ -91,22 +83,21 @@ export default function Puzzle() {
   useEffect(() => {
     const checkSolved = () => {
       for (let i = 0; i < TILE_COUNT - 1; i++) {
-        if (tiles[i] !== i + 1) return false;
+        if (tiles[i] !== i) return false;
       }
       return tiles[TILE_COUNT - 1] === null;
     };
-    if(tiles.length > 0) {
+    if(tiles.length > 0 && !isLoading) {
       const solved = checkSolved();
       setIsSolved(solved);
       if (solved && isHighScore(score)) {
         setShowHighScoreDialog(true);
       }
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tiles]);
+  }, [tiles, score, isHighScore, isLoading]);
 
   const handleTileClick = (index: number) => {
-    if (isSolved) return;
+    if (isSolved || isLoading) return;
     const emptyIndex = tiles.indexOf(null);
     if(emptyIndex === -1) return;
 
@@ -140,25 +131,51 @@ export default function Puzzle() {
             </div>
         </div>
       </div>
-
-      <div className="relative w-[312px] h-[312px] bg-card rounded-lg p-1 grid grid-cols-3 gap-1">
-        {tiles.map((tile, index) => (
-          <div
-            key={index}
-            onClick={() => handleTileClick(index)}
-            className={cn(
-              "w-24 h-24 flex items-center justify-center text-4xl font-bold rounded-md transition-all duration-300",
-              tile ? "bg-secondary text-primary cursor-pointer hover:bg-secondary/80" : "bg-transparent cursor-default",
-               isSolved && tile ? "bg-primary text-primary-foreground" : ""
-            )}
-          >
-            {tile}
+      
+      <div className="flex flex-col md:flex-row gap-8 items-center">
+          <div className="relative w-[312px] h-[312px] bg-card rounded-lg p-1 grid grid-cols-3 gap-1">
+            {isLoading ? (
+                 Array.from({ length: 9 }).map((_, i) => <Skeleton key={i} className="w-24 h-24" />)
+            ) : tiles.map((tile, index) => (
+              <div
+                key={index}
+                onClick={() => handleTileClick(index)}
+                className={cn(
+                  "w-24 h-24 flex items-center justify-center rounded-md transition-all duration-300 relative",
+                  tile !== null ? "bg-secondary cursor-pointer" : "bg-transparent cursor-default",
+                )}
+                style={{
+                  transform: `translate(${(index % GRID_SIZE) * 104}px, ${Math.floor(index / GRID_SIZE) * 104}px)`
+                }}
+              >
+                {tile !== null && imageTiles[tile] &&
+                    <Image src={imageTiles[tile]} layout="fill" alt={`tile-${tile}`} className="rounded-md" />
+                }
+              </div>
+            ))}
+             {isSolved && (
+                <div className="absolute inset-0 bg-black/70 flex flex-col items-center justify-center rounded-lg z-10">
+                    <Check className="w-24 h-24 text-primary" />
+                    <h3 className="text-3xl font-bold text-primary mt-2">Solved!</h3>
+                </div>
+             )}
           </div>
-        ))}
+          
+          <div className="flex flex-col items-center gap-4">
+            <h3 className="text-xl font-semibold text-primary">Goal Image</h3>
+            {isLoading ? <Skeleton className="w-48 h-48 rounded-lg" /> :
+             mainImage && <Image src={mainImage} width={192} height={192} alt="Puzzle to solve" className="rounded-lg border-2 border-primary" />
+            }
+             <Button onClick={initializeGame} disabled={isLoading}>
+                <RefreshCw className={cn("mr-2 h-4 w-4", isLoading && "animate-spin")} />
+                New Puzzle
+            </Button>
+          </div>
       </div>
+
+
        {isSolved && (
         <div className="text-center flex flex-col items-center mt-4">
-          <h2 className="text-5xl font-bold text-primary mb-4">You Solved It!</h2>
           <HighScoreDialog
             open={showHighScoreDialog}
             onOpenChange={setShowHighScoreDialog}
@@ -166,9 +183,6 @@ export default function Puzzle() {
             gameName={GAME_NAME}
             onSave={(playerName, avatar) => addHighScore({ score, playerName, avatarDataUri: avatar })}
           />
-          <p className="text-2xl mb-2">Final Score: {score}</p>
-          <p className="text-xl text-muted-foreground mb-6">Total Moves: {moves}</p>
-          <Button onClick={initializeGame} size="lg">Play Again</Button>
           <DifficultyAdjuster 
             gameName="Sliding Puzzle"
             playerScore={score}

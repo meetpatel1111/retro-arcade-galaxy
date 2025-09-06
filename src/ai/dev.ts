@@ -12,3 +12,4 @@ import '@/ai/flows/ai-cheat-code.ts';
 import '@/ai/flows/ai-player-backstory.ts';
 import '@/ai/flows/ai-generate-avatar.ts';
 import '@/ai/flows/ai-generate-legend-video.ts';
+import '@/ai/flows/ai-generate-puzzle-image.ts';
