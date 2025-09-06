@@ -1,7 +1,7 @@
 
 "use client";
 import { useState, useEffect, useRef } from 'react';
-import { Bot, MessageSquareText, PlayCircle } from 'lucide-react';
+import { MessageSquareText, PlayCircle } from 'lucide-react';
 import { generateGameBanter } from '@/ai/flows/ai-game-banter';
 import { Button } from './ui/button';
 
@@ -17,6 +17,16 @@ export default function AiBanterBox({ gameOutcome, gameName, score }: AiBanterBo
     const [isLoading, setIsLoading] = useState(false);
     const audioRef = useRef<HTMLAudioElement | null>(null);
     const hasFetched = useRef(false);
+
+    useEffect(() => {
+        // Cleanup function to run when the component unmounts or dependencies change
+        return () => {
+            if (audioRef.current) {
+                audioRef.current.pause();
+                audioRef.current = null;
+            }
+        };
+    }, []);
 
     useEffect(() => {
         if (gameOutcome && !hasFetched.current) {
