@@ -79,7 +79,6 @@ export default function TypingSpeedTest() {
 
   const endGame = () => {
     setIsGameRunning(false);
-    const wordsTyped = currentWordIndex;
     const minutes = GAME_DURATION_S / 60;
     const wpm = Math.round(correctChars / 5 / minutes);
     const accuracy = totalChars > 0 ? Math.round((correctChars / totalChars) * 100) : 0;
@@ -178,6 +177,8 @@ export default function TypingSpeedTest() {
           className="flex-grow bg-card p-4 text-2xl font-mono rounded-lg border-2 border-primary focus:outline-none focus:ring-2 focus:ring-accent"
           disabled={!isGameRunning || isLoading}
           placeholder={isGameRunning ? "Type here..." : ""}
+          autoCapitalize="off"
+          autoCorrect="off"
         />
         <Button onClick={startGame} size="lg" disabled={isGameRunning || isLoading} className="h-auto">
           Start
