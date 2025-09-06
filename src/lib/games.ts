@@ -1,5 +1,5 @@
 import type { Game } from '@/lib/types';
-import { BrainCircuit, Puzzle, Zap, GitCommitHorizontal, Hammer, X, Rows4, MoveHorizontal, Bomb, Star, CaseSensitive } from 'lucide-react';
+import { BrainCircuit, Puzzle, Zap, GitCommitHorizontal, Hammer, X, Rows4, MoveHorizontal, Bomb, Star, CaseSensitive, Scissors, VenetianMask } from 'lucide-react';
 
 export const GAMES: Game[] = [
   {
@@ -71,5 +71,19 @@ export const GAMES: Game[] = [
     description: 'Unscramble the letters to form a word.',
     icon: CaseSensitive,
     href: '/games/word-scramble',
+  },
+  {
+    id: 'rock-paper-scissors',
+    name: 'Rock Paper Scissors',
+    description: 'The classic game of choices. Can you beat the AI?',
+    icon: Scissors,
+    href: '/games/rock-paper-scissors',
+  },
+  {
+    id: 'hangman',
+    name: 'Hangman',
+    description: 'Guess the word before it\'s too late.',
+    icon: VenetianMask,
+    href: '/games/hangman',
   },
 ];
