@@ -30,7 +30,7 @@ const createSolvedTiles = () => Array.from({ length: TILE_COUNT }, (_, i) => (i 
 
 const shuffleTiles = (tiles: (number | null)[], shuffles: number) => {
   let newTiles = [...tiles];
-  for (let i = 0; i < shuffles * 2; i++) { // Increased shuffles for better randomness
+  for (let i = 0; i < shuffles * 2; i++) {
       const emptyIndex = newTiles.indexOf(null);
       const validMoves: number[] = [];
       if (emptyIndex % GRID_SIZE > 0) validMoves.push(emptyIndex - 1);
@@ -135,18 +135,15 @@ export default function Puzzle() {
       <div className="flex flex-col md:flex-row gap-8 items-center">
           <div className="relative w-[312px] h-[312px] bg-card rounded-lg p-1 grid grid-cols-3 gap-1">
             {isLoading ? (
-                 Array.from({ length: 9 }).map((_, i) => <Skeleton key={i} className="w-24 h-24" />)
+                 Array.from({ length: 9 }).map((_, i) => <Skeleton key={i} className="w-[100px] h-[100px]" />)
             ) : tiles.map((tile, index) => (
               <div
                 key={index}
                 onClick={() => handleTileClick(index)}
                 className={cn(
-                  "w-24 h-24 flex items-center justify-center rounded-md transition-all duration-300 relative",
+                  "w-[100px] h-[100px] flex items-center justify-center rounded-md transition-all duration-300 relative",
                   tile !== null ? "bg-secondary cursor-pointer" : "bg-transparent cursor-default",
                 )}
-                style={{
-                  transform: `translate(${(index % GRID_SIZE) * 104}px, ${Math.floor(index / GRID_SIZE) * 104}px)`
-                }}
               >
                 {tile !== null && imageTiles[tile] &&
                     <Image src={imageTiles[tile]} layout="fill" alt={`tile-${tile}`} className="rounded-md" />
