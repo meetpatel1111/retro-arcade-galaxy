@@ -108,10 +108,18 @@ export default function WhackAMole() {
         if (moles.includes(index)) {
             setScore(prev => prev + 10 * level);
             setMoles(prevMoles => prevMoles.filter(m => m !== index));
-        } else {
-            setScore(prev => Math.max(0, prev - 5));
         }
     };
+
+    const handleHoleClick = (index: number) => {
+        if (gameOver) return;
+        if (moles.includes(index)) {
+            whackMole(index);
+        } else {
+            // Penalty for missing
+            setScore(prev => Math.max(0, prev - 5));
+        }
+    }
 
     const handleSaveScore = (playerName: string) => {
         addHighScore({ score, playerName });
@@ -168,7 +176,7 @@ export default function WhackAMole() {
             ) : (
                 <div className="grid grid-cols-3 gap-4">
                     {Array.from({ length: GRID_SIZE }).map((_, i) => (
-                        <div key={i} className="w-32 h-32 bg-secondary rounded-full flex items-center justify-center cursor-pointer border-4 border-yellow-800/50 relative overflow-hidden" onClick={() => whackMole(i)}>
+                        <div key={i} className="w-32 h-32 bg-secondary rounded-full flex items-center justify-center cursor-pointer border-4 border-yellow-800/50 relative overflow-hidden" onClick={() => handleHoleClick(i)}>
                             <div className={cn("absolute bottom-0 w-full h-full bg-yellow-900/40 transition-transform duration-100", moles.includes(i) ? "translate-y-0" : "translate-y-full")}></div>
                             {moles.includes(i) && (
                                 <Hammer className="w-20 h-20 text-primary transition-transform duration-300 ease-out transform animate-bounce" />
