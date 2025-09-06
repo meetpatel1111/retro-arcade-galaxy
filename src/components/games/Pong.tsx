@@ -57,6 +57,7 @@ export default function Pong() {
     paddle2Velocity: 0,
   });
   const [scores, setScores] = useState({ player1: 0, player2: 0 });
+  const [level, setLevel] = useState(1);
   const [gameOver, setGameOver] = useState(true);
   const [winner, setWinner] = useState<string | null>(null);
   const [difficulty, setDifficulty] = useState<Difficulty>('beginner');
@@ -68,14 +69,20 @@ export default function Pong() {
   useEffect(() => {
     difficultyRef.current = difficulty;
   }, [difficulty]);
+  
+  const levelRef = useRef(level);
+  useEffect(() => {
+    levelRef.current = level;
+  }, [level]);
 
   const resetBall = useCallback((direction: 'left' | 'right') => {
     const gs = gameStateRef.current;
     gs.ballX = CANVAS_WIDTH / 2;
     gs.ballY = CANVAS_HEIGHT / 2;
     const { ballSpeed } = DIFFICULTY_SETTINGS[difficultyRef.current];
-    gs.ballSpeedX = (direction === 'left' ? -1 : 1) * ballSpeed;
-    gs.ballSpeedY = (Math.random() > 0.5 ? 1 : -1) * (ballSpeed / 2);
+    const levelBonus = (levelRef.current - 1) * 0.5;
+    gs.ballSpeedX = (direction === 'left' ? -1 : 1) * (ballSpeed + levelBonus);
+    gs.ballSpeedY = (Math.random() > 0.5 ? 1 : -1) * ((ballSpeed + levelBonus) / 2);
   }, []);
 
   const startGame = useCallback(() => {
@@ -83,6 +90,7 @@ export default function Pong() {
     gs.score1 = 0;
     gs.score2 = 0;
     setScores({ player1: 0, player2: 0 });
+    setLevel(1);
     setGameOver(false);
     setWinner(null);
     gs.paddle1Y = CANVAS_HEIGHT / 2 - PADDLE_HEIGHT / 2;
@@ -153,7 +161,7 @@ export default function Pong() {
 
         // AI movement
         if (gameMode === 'ai') {
-          const aiLevelSpeed = aiSpeed + gs.score1 * 0.5; // AI gets faster as player scores
+          const aiLevelSpeed = aiSpeed + (levelRef.current - 1) * 0.5; // AI gets faster as player scores
           const paddleCenter = gs.paddle2Y + PADDLE_HEIGHT / 2;
           if (paddleCenter < gs.ballY - 20) {
             gs.paddle2Y += aiLevelSpeed;
@@ -195,6 +203,7 @@ export default function Pong() {
           resetBall('left');
         } else if (gs.ballX > CANVAS_WIDTH) {
           gs.score1++;
+          setLevel(l => l + 1);
           setScores({ player1: gs.score1, player2: gs.score2 });
           resetBall('right');
         }
@@ -203,7 +212,7 @@ export default function Pong() {
         if (gs.score1 >= WINNING_SCORE) {
           setWinner('Player 1');
           setGameOver(true);
-          const score = gs.score1 * 10 - gs.score2 * 5;
+          const score = gs.score1 * 10 - gs.score2 * 5 + levelRef.current * 20;
           if (isHighScore(score)) {
               setShowHighScoreDialog(true);
           }
@@ -267,7 +276,7 @@ export default function Pong() {
     }
   };
 
-  const playerScore = scores.player1 * 10 - scores.player2 * 5;
+  const playerScore = scores.player1 * 10 - scores.player2 * 5 + level * 20;
   
   const getGameOutcome = () => {
     if (gameMode !== 'ai' || !winner) return null;
@@ -283,8 +292,9 @@ export default function Pong() {
         <h1 className="text-4xl font-bold text-primary">{GAME_NAME}</h1>
         <div className="flex items-center gap-4">
              <Button variant="outline" asChild><Link href={`/leaderboard/${GAME_ID}`}><Trophy className="mr-2 h-4 w-4" /> Leaderboard</Link></Button>
-            <div className="text-right min-w-[100px] text-2xl font-bold">
-                <span className="text-primary">{scores.player1}</span> : <span className="text-accent">{scores.player2}</span>
+            <div className="text-right min-w-[100px] text-lg font-bold">
+                <p>Score: <span className="text-primary">{scores.player1}</span> : <span className="text-accent">{scores.player2}</span></p>
+                {gameMode === 'ai' && <p>Level: <span className="text-accent">{level}</span></p>}
             </div>
         </div>
       </div>
