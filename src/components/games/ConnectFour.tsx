@@ -132,7 +132,41 @@ export default function ConnectFour() {
     }
 
     if(availableColumns.length > 0) {
-      // Very simple AI: just picks a random valid column
+      // Beginner: random move
+      if (difficulty === 'beginner' || (difficulty === 'intermediate' && Math.random() < 0.5)) {
+        const randomColumn = availableColumns[Math.floor(Math.random() * availableColumns.length)];
+        setTimeout(() => placePiece(randomColumn, '2'), 500);
+        return;
+      }
+
+      // Expert/Intermediate: Try to win or block
+      for (const col of availableColumns) {
+        // Check if AI can win
+        const tempBoardWin = board.map(r => [...r]);
+        for (let r = ROWS - 1; r >= 0; r--) {
+          if (!tempBoardWin[r][col]) {
+            tempBoardWin[r][col] = '2';
+            if (checkWin(tempBoardWin) === '2') {
+              setTimeout(() => placePiece(col, '2'), 500);
+              return;
+            }
+            break;
+          }
+        }
+        // Check if player is about to win and block
+        const tempBoardBlock = board.map(r => [...r]);
+         for (let r = ROWS - 1; r >= 0; r--) {
+          if (!tempBoardBlock[r][col]) {
+            tempBoardBlock[r][col] = '1';
+             if (checkWin(tempBoardBlock) === '1') {
+                setTimeout(() => placePiece(col, '2'), 500);
+                return;
+            }
+            break;
+          }
+        }
+      }
+      
       const randomColumn = availableColumns[Math.floor(Math.random() * availableColumns.length)];
       setTimeout(() => placePiece(randomColumn, '2'), 500);
     }

@@ -1,3 +1,4 @@
+
 "use client";
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
@@ -55,24 +56,22 @@ export default function RockPaperScissors() {
     };
 
     const getAiChoice = (playerPrevChoice: Choice): Choice => {
-        // Beginner: completely random
-        if (difficulty === 'beginner') {
+        const level = Math.floor(rounds / 2); // AI gets smarter every 2 rounds
+        
+        if (difficulty === 'beginner' && level < 1) { // Beginner AI is always random
             return CHOICES[Math.floor(Math.random() * CHOICES.length)];
         }
-        // Intermediate: has a chance to counter
-        if (difficulty === 'intermediate') {
-            if (Math.random() > 0.5) {
-                return getWinningChoice(playerPrevChoice);
-            }
-            return CHOICES[Math.floor(Math.random() * CHOICES.length)];
+        
+        const chanceToCounter = {
+            beginner: 0.3,
+            intermediate: 0.6,
+            expert: 0.9
+        }[difficulty] + level * 0.1;
+
+        if (Math.random() < chanceToCounter) {
+            return getWinningChoice(playerPrevChoice);
         }
-        // Expert: almost always counters
-        if (difficulty === 'expert') {
-            if (Math.random() > 0.2) {
-                return getWinningChoice(playerPrevChoice);
-            }
-            return CHOICES[Math.floor(Math.random() * CHOICES.length)];
-        }
+        
         return CHOICES[Math.floor(Math.random() * CHOICES.length)];
     }
 

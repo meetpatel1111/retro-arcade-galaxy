@@ -15,11 +15,6 @@ const GRID_SIZE = 20;
 const TILE_SIZE = 20;
 
 type Difficulty = 'beginner' | 'intermediate' | 'expert';
-const DIFFICULTY_SETTINGS = {
-    beginner: 150,
-    intermediate: 100,
-    expert: 50,
-};
 
 type Vector = { x: number; y: number };
 
@@ -40,12 +35,19 @@ export default function Snake() {
     const [direction, setDirection] = useState<Vector>({ x: 0, y: -1 }); // up
     const [gameOver, setGameOver] = useState(false);
     const [score, setScore] = useState(0);
+    const [level, setLevel] = useState(1);
+    const [foodEaten, setFoodEaten] = useState(0);
     const [difficulty, setDifficulty] = useState<Difficulty>('beginner');
     const [isStarted, setIsStarted] = useState(false);
     const [showHighScoreDialog, setShowHighScoreDialog] = useState(false);
     const { isHighScore, addHighScore } = useHighScores(GAME_ID);
     const directionRef = useRef(direction);
     const canvasRef = useRef<HTMLCanvasElement | null>(null);
+
+    const getGameSpeed = () => {
+        const baseSpeed = { beginner: 150, intermediate: 100, expert: 50 }[difficulty];
+        return Math.max(30, baseSpeed - (level * 5));
+    }
 
     const handleSetDirection = useCallback((newDirection: Vector) => {
         const currentDirection = directionRef.current;
@@ -70,6 +72,8 @@ export default function Snake() {
         directionRef.current = { x: 0, y: -1 };
         setDirection({ x: 0, y: -1 });
         setScore(0);
+        setLevel(1);
+        setFoodEaten(0);
         setGameOver(false);
         setIsStarted(true);
     }, []);
@@ -101,7 +105,14 @@ export default function Snake() {
             newSnake.unshift(head);
 
             if (head.x === food.x && head.y === food.y) {
-                setScore(s => s + 10);
+                setScore(s => s + 10 * level);
+                setFoodEaten(f => {
+                    const newFoodCount = f + 1;
+                    if (newFoodCount % 5 === 0) { // Level up every 5 foods
+                        setLevel(l => l + 1);
+                    }
+                    return newFoodCount;
+                });
                 setFood(getRandomCoord(newSnake));
             } else {
                 newSnake.pop();
@@ -109,14 +120,14 @@ export default function Snake() {
             
             return newSnake;
         });
-    }, [food, handleGameOver]);
+    }, [food, handleGameOver, level]);
     
     useEffect(() => {
         if (isStarted && !gameOver) {
-            const gameLoop = setInterval(runGame, DIFFICULTY_SETTINGS[difficulty]);
+            const gameLoop = setInterval(runGame, getGameSpeed());
             return () => clearInterval(gameLoop);
         }
-    }, [isStarted, gameOver, runGame, difficulty]);
+    }, [isStarted, gameOver, runGame, difficulty, level]);
 
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
@@ -171,6 +182,7 @@ export default function Snake() {
                     <Button variant="outline" asChild><Link href={`/leaderboard/${GAME_ID}`}><Trophy className="mr-2 h-4 w-4" /> Leaderboard</Link></Button>
                     <div className="text-right min-w-[100px]">
                         <p>Score: <span className="font-bold text-accent">{score}</span></p>
+                        <p>Level: <span className="font-bold text-accent">{level}</span></p>
                     </div>
                 </div>
             </div>

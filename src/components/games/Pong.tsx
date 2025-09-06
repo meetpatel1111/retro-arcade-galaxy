@@ -69,16 +69,16 @@ export default function Pong() {
     difficultyRef.current = difficulty;
   }, [difficulty]);
 
-  const resetBall = (direction: 'left' | 'right') => {
+  const resetBall = useCallback((direction: 'left' | 'right') => {
     const gs = gameStateRef.current;
     gs.ballX = CANVAS_WIDTH / 2;
     gs.ballY = CANVAS_HEIGHT / 2;
     const { ballSpeed } = DIFFICULTY_SETTINGS[difficultyRef.current];
     gs.ballSpeedX = (direction === 'left' ? -1 : 1) * ballSpeed;
     gs.ballSpeedY = (Math.random() > 0.5 ? 1 : -1) * (ballSpeed / 2);
-  };
+  }, []);
 
-  const startGame = () => {
+  const startGame = useCallback(() => {
     const gs = gameStateRef.current;
     gs.score1 = 0;
     gs.score2 = 0;
@@ -87,8 +87,12 @@ export default function Pong() {
     setWinner(null);
     gs.paddle1Y = CANVAS_HEIGHT / 2 - PADDLE_HEIGHT / 2;
     gs.paddle2Y = CANVAS_HEIGHT / 2 - PADDLE_HEIGHT / 2;
-    resetBall(Math.random() > 0.5 ? 'left' : 'right');
-  };
+    gs.ballSpeedX = 0;
+    gs.ballSpeedY = 0;
+    setTimeout(() => {
+        resetBall(Math.random() > 0.5 ? 'left' : 'right');
+    }, 500);
+  }, [resetBall]);
   
   const draw = useCallback(() => {
     const canvas = canvasRef.current;
@@ -149,11 +153,12 @@ export default function Pong() {
 
         // AI movement
         if (gameMode === 'ai') {
+          const aiLevelSpeed = aiSpeed + gs.score1 * 0.5; // AI gets faster as player scores
           const paddleCenter = gs.paddle2Y + PADDLE_HEIGHT / 2;
           if (paddleCenter < gs.ballY - 20) {
-            gs.paddle2Y += aiSpeed;
+            gs.paddle2Y += aiLevelSpeed;
           } else if (paddleCenter > gs.ballY + 20) {
-            gs.paddle2Y -= aiSpeed;
+            gs.paddle2Y -= aiLevelSpeed;
           }
         }
         
@@ -213,7 +218,7 @@ export default function Pong() {
     const intervalId = setInterval(gameLoop, 16); // ~60 FPS
     
     return () => clearInterval(intervalId);
-  }, [gameOver, gameMode, isHighScore, draw]);
+  }, [gameOver, gameMode, isHighScore, draw, resetBall]);
 
    useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {

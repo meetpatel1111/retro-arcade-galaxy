@@ -14,11 +14,6 @@ const GAME_ID = 'simon-says';
 const GAME_NAME = 'Simon Says';
 
 type Difficulty = 'beginner' | 'intermediate' | 'expert';
-const DIFFICULTY_SETTINGS = {
-  beginner: { speed: 800 },
-  intermediate: { speed: 600 },
-  expert: { speed: 400 },
-};
 
 const COLORS = ['green', 'red', 'yellow', 'blue'];
 const COLOR_CLASSES = {
@@ -37,11 +32,17 @@ export default function SimonSays() {
     const [isPlayersTurn, setIsPlayersTurn] = useState(false);
     const [isDisplaying, setIsDisplaying] = useState(false);
     const [score, setScore] = useState(0);
+    const [level, setLevel] = useState(1);
     const [gameOver, setGameOver] = useState(true);
     const [difficulty, setDifficulty] = useState<Difficulty>('beginner');
     const { isHighScore, addHighScore } = useHighScores(GAME_ID);
     const [showHighScoreDialog, setShowHighScoreDialog] = useState(false);
     
+    const getDisplaySpeed = () => {
+        const baseSpeed = { beginner: 800, intermediate: 600, expert: 400 }[difficulty];
+        return Math.max(150, baseSpeed - (level * 20));
+    };
+
     const addToSequence = () => {
         const randomColor = COLORS[Math.floor(Math.random() * COLORS.length)];
         setSequence(prev => [...prev, randomColor]);
@@ -50,6 +51,7 @@ export default function SimonSays() {
     const startGame = useCallback(() => {
         setGameOver(false);
         setScore(0);
+        setLevel(1);
         setSequence([]);
         setPlayerSequence([]);
         setIsPlayersTurn(false);
@@ -65,14 +67,14 @@ export default function SimonSays() {
         await new Promise(r => setTimeout(r, 500));
         for (const color of sequence) {
             setActiveColor(color);
-            await new Promise(r => setTimeout(r, DIFFICULTY_SETTINGS[difficulty].speed));
+            await new Promise(r => setTimeout(r, getDisplaySpeed()));
             setActiveColor(null);
             await new Promise(r => setTimeout(r, 100));
         }
         setIsPlayersTurn(true);
         setPlayerSequence([]);
         setIsDisplaying(false);
-    }, [sequence, difficulty]);
+    }, [sequence, getDisplaySpeed]);
 
     useEffect(() => {
         if (!gameOver && sequence.length > 0) {
@@ -97,7 +99,8 @@ export default function SimonSays() {
 
         // Check if sequence is complete
         if (newPlayerSequence.length === sequence.length) {
-            setScore(s => s + 10);
+            setScore(s => s + 10 * level);
+            setLevel(l => l + 1);
             setIsPlayersTurn(false);
             setTimeout(() => {
                 addToSequence();
@@ -107,7 +110,7 @@ export default function SimonSays() {
     
     const getGameOutcome = () => {
         if (!gameOver) return null;
-        if (score > 50) return 'win'; // Arbitrary
+        if (level > 5) return 'win'; 
         return 'loss';
     }
 
@@ -120,6 +123,7 @@ export default function SimonSays() {
                     <Button variant="outline" asChild><Link href={`/leaderboard/${GAME_ID}`}><Trophy className="mr-2 h-4 w-4" /> Leaderboard</Link></Button>
                      <div className="text-right min-w-[100px] text-lg font-bold">
                         <p>Score: <span className="text-accent">{score}</span></p>
+                        <p>Level: <span className="text-accent">{level}</span></p>
                     </div>
                 </div>
             </div>

@@ -1,3 +1,4 @@
+
 "use client";
 import { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
@@ -24,6 +25,7 @@ export default function WordScramble() {
   const [scrambledWord, setScrambledWord] = useState('');
   const [playerGuess, setPlayerGuess] = useState('');
   const [score, setScore] = useState(0);
+  const [level, setLevel] = useState(1);
   const [timeLeft, setTimeLeft] = useState(GAME_DURATION_S);
   const [gameOver, setGameOver] = useState(true);
   const [isLoadingWord, setIsLoadingWord] = useState(false);
@@ -33,23 +35,28 @@ export default function WordScramble() {
 
   const fetchNewWord = useCallback(async () => {
     setIsLoadingWord(true);
+    let currentDifficulty = difficulty;
+    if (level > 5 && difficulty === 'beginner') currentDifficulty = 'intermediate';
+    if (level > 10 && difficulty === 'intermediate') currentDifficulty = 'expert';
+
     try {
-      const { originalWord, scrambledWord } = await generateScrambledWord({ difficulty });
+      const { originalWord, scrambledWord } = await generateScrambledWord({ difficulty: currentDifficulty });
       setOriginalWord(originalWord);
       setScrambledWord(scrambledWord);
     } catch (error) {
       console.error("Failed to fetch new word:", error);
       // Fallback simple words
       const fallback = { beginner: 'game', intermediate: 'player', expert: 'arcade' };
-      setOriginalWord(fallback[difficulty]);
-      setScrambledWord(fallback[difficulty].split('').sort(() => 0.5 - Math.random()).join(''));
+      setOriginalWord(fallback[currentDifficulty]);
+      setScrambledWord(fallback[currentDifficulty].split('').sort(() => 0.5 - Math.random()).join(''));
     } finally {
       setIsLoadingWord(false);
     }
-  }, [difficulty]);
+  }, [difficulty, level]);
 
   const startGame = useCallback(() => {
     setScore(0);
+    setLevel(1);
     setPlayerGuess('');
     setFeedback(null);
     setTimeLeft(GAME_DURATION_S);
@@ -79,6 +86,7 @@ export default function WordScramble() {
 
     if (playerGuess.toLowerCase() === originalWord) {
       setScore(s => s + 100 + originalWord.length * 10);
+      setLevel(l => l + 1);
       setFeedback('correct');
     } else {
       setScore(s => Math.max(0, s - 20));
@@ -106,6 +114,7 @@ export default function WordScramble() {
           <Button variant="outline" asChild><Link href={`/leaderboard/${GAME_ID}`}><Trophy className="mr-2 h-4 w-4" /> Leaderboard</Link></Button>
           <div className="text-right min-w-[100px]">
             <p>Score: <span className="font-bold text-accent">{score}</span></p>
+            <p>Level: <span className="font-bold text-accent">{level}</span></p>
             <p>Time: <span className="font-bold text-accent">{timeLeft}</span></p>
           </div>
         </div>

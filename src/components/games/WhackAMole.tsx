@@ -14,22 +14,35 @@ const GAME_ID = 'whack-a-mole';
 const GAME_NAME = 'Whack-a-Mole';
 const GRID_SIZE = 9;
 type Difficulty = 'beginner' | 'intermediate' | 'expert';
-const DIFFICULTY_SETTINGS = {
-    beginner: { interval: 1000, duration: 800 },
-    intermediate: { interval: 700, duration: 600 },
-    expert: { interval: 400, duration: 400 },
-};
+
 const GAME_DURATION_S = 30;
 
 export default function WhackAMole() {
     const [moles, setMoles] = useState<number[]>([]);
     const [score, setScore] = useState(0);
+    const [level, setLevel] = useState(1);
     const [timeLeft, setTimeLeft] = useState(GAME_DURATION_S);
     const [gameOver, setGameOver] = useState(true);
     const [difficulty, setDifficulty] = useState<Difficulty>('beginner');
     const [showHighScoreDialog, setShowHighScoreDialog] = useState(false);
     const { isHighScore, addHighScore } = useHighScores(GAME_ID);
     const hasProcessedScore = useRef(true);
+
+    const getMoleSpeed = () => {
+        const baseInterval = { beginner: 1000, intermediate: 700, expert: 400 }[difficulty];
+        const baseDuration = { beginner: 800, intermediate: 600, expert: 400 }[difficulty];
+        return {
+            interval: Math.max(200, baseInterval - (level * 30)),
+            duration: Math.max(150, baseDuration - (level * 25)),
+        }
+    }
+    
+    useEffect(() => {
+       if (score > level * 100) {
+            setLevel(level + 1);
+       }
+    }, [score, level]);
+
 
     useEffect(() => {
         if (gameOver || timeLeft <= 0) {
@@ -44,6 +57,8 @@ export default function WhackAMole() {
             setTimeLeft(prev => prev - 1);
         }, 1000);
 
+        const { interval, duration } = getMoleSpeed();
+
         const moleInterval = setInterval(() => {
             setMoles(prevMoles => {
                 const newMoles = [...prevMoles];
@@ -55,17 +70,17 @@ export default function WhackAMole() {
 
                 setTimeout(() => {
                     setMoles(currentMoles => currentMoles.filter(m => m !== randomIndex));
-                }, DIFFICULTY_SETTINGS[difficulty].duration);
+                }, duration);
 
                 return newMoles;
             });
-        }, DIFFICULTY_SETTINGS[difficulty].interval);
+        }, interval);
         
         return () => {
             clearInterval(gameTimer);
             clearInterval(moleInterval);
         };
-    }, [gameOver, difficulty, timeLeft]);
+    }, [gameOver, difficulty, timeLeft, level]);
 
 
     useEffect(() => {
@@ -80,6 +95,7 @@ export default function WhackAMole() {
 
     const startGame = () => {
         setScore(0);
+        setLevel(1);
         setTimeLeft(GAME_DURATION_S);
         setMoles([]);
         hasProcessedScore.current = false;
@@ -90,7 +106,7 @@ export default function WhackAMole() {
     const whackMole = (index: number) => {
         if (gameOver) return;
         if (moles.includes(index)) {
-            setScore(prev => prev + 10);
+            setScore(prev => prev + 10 * level);
             setMoles(prevMoles => prevMoles.filter(m => m !== index));
         } else {
             setScore(prev => Math.max(0, prev - 5));
@@ -117,6 +133,7 @@ export default function WhackAMole() {
                     <Button variant="outline" asChild><Link href={`/leaderboard/${GAME_ID}`}><Trophy className="mr-2 h-4 w-4" /> Leaderboard</Link></Button>
                     <div className="text-right min-w-[100px]">
                         <p>Score: <span className="font-bold text-accent">{score}</span></p>
+                        <p>Level: <span className="font-bold text-accent">{level}</span></p>
                         <p>Time: <span className="font-bold text-accent">{timeLeft}</span></p>
                     </div>
                 </div>
