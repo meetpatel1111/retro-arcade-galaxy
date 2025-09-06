@@ -95,7 +95,6 @@ export default function TwentyFortyEight() {
     let currentBoard = board.map(row => [...row]);
     let totalPoints = 0;
     
-    // Rotate board to make every move a 'left' move
     let rotations = 0;
     if (direction === 'up') rotations = 1;
     if (direction === 'right') rotations = 2;
@@ -105,30 +104,25 @@ export default function TwentyFortyEight() {
       currentBoard = rotateBoard(currentBoard);
     }
     
-    const newBoard = currentBoard.map(row => {
+    let boardAfterSlide: (number | null)[][] = [];
+    let hasChanged = false;
+
+    currentBoard.forEach((row, r) => {
       const { newRow, points } = slideAndCombine(row);
       totalPoints += points;
-      return newRow;
+      boardAfterSlide.push(newRow);
+      if (JSON.stringify(row) !== JSON.stringify(newRow)) {
+        hasChanged = true;
+      }
     });
 
-    // Rotate back
-    for(let i=0; i < rotations; i++) {
-      currentBoard = rotateBoard(currentBoard); // For comparison
-      newBoard.forEach((row, r) => {
-        newBoard[r] = rotateBoard([newBoard[r]])[0].reverse();
-      });
-      newBoard.reverse();
-    }
-    // Correct way to rotate back
-     let rotatedBackBoard = newBoard;
+    let finalBoard = boardAfterSlide;
     for (let i = 0; i < (4 - rotations) % 4; i++) {
-       rotatedBackBoard = rotateBoard(rotatedBackBoard);
+       finalBoard = rotateBoard(finalBoard);
     }
-
-    const hasChanged = JSON.stringify(board) !== JSON.stringify(rotatedBackBoard);
 
     if (hasChanged) {
-        const boardWithNewTile = addRandomTile(rotatedBackBoard);
+        const boardWithNewTile = addRandomTile(finalBoard);
         setBoard(boardWithNewTile);
         setScore(s => s + totalPoints);
         checkEndConditions(boardWithNewTile);
@@ -136,19 +130,27 @@ export default function TwentyFortyEight() {
   };
 
   const checkEndConditions = (currentBoard: (number|null)[][]) => {
-     // Check for 2048
-    if (currentBoard.flat().includes(2048)) {
+    if (currentBoard.flat().includes(2048) && !gameWon) {
       setGameWon(true);
     }
     
-    // Check for game over (no possible moves)
     let canMove = false;
     for(let r=0; r<GRID_SIZE; r++) {
         for(let c=0; c<GRID_SIZE; c++) {
-            if (currentBoard[r][c] === null) canMove = true;
-            if (r + 1 < GRID_SIZE && currentBoard[r][c] === currentBoard[r+1][c]) canMove = true;
-            if (c + 1 < GRID_SIZE && currentBoard[r][c] === currentBoard[r][c+1]) canMove = true;
+            if (currentBoard[r][c] === null) {
+              canMove = true;
+              break;
+            }
+            if (r + 1 < GRID_SIZE && currentBoard[r][c] === currentBoard[r+1][c]) {
+              canMove = true;
+              break;
+            }
+            if (c + 1 < GRID_SIZE && currentBoard[r][c] === currentBoard[r][c+1]) {
+              canMove = true;
+              break;
+            }
         }
+        if (canMove) break;
     }
     
     if(!canMove) {
@@ -160,12 +162,17 @@ export default function TwentyFortyEight() {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      e.preventDefault();
+      if (gameOver) return;
+      
+      let moved = false;
       switch (e.key) {
-        case 'ArrowUp': move('up'); break;
-        case 'ArrowDown': move('down'); break;
-        case 'ArrowLeft': move('left'); break;
-        case 'ArrowRight': move('right'); break;
+        case 'ArrowUp': move('up'); moved = true; break;
+        case 'ArrowDown': move('down'); moved = true; break;
+        case 'ArrowLeft': move('left'); moved = true; break;
+        case 'ArrowRight': move('right'); moved = true; break;
+      }
+      if (moved) {
+        e.preventDefault();
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -220,9 +227,9 @@ export default function TwentyFortyEight() {
             )}
         </div>
          {(gameOver || gameWon) && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center bg-background/80 text-center p-4">
+            <div className="absolute inset-0 flex flex-col items-center justify-center bg-background/80 text-center p-4 rounded-lg">
                 <h2 className="text-5xl font-bold text-primary mb-4">
-                    {gameWon ? "You Win!" : "Game Over!"}
+                    {gameWon && !gameOver ? "You Reached 2048!" : gameOver ? "Game Over!" : ""}
                 </h2>
                 <p className="text-2xl mb-4">Final Score: {score}</p>
                 <HighScoreDialog
@@ -232,8 +239,11 @@ export default function TwentyFortyEight() {
                   gameName={GAME_NAME}
                   onSave={(name) => addHighScore({ playerName: name, score })}
                 />
-                <Button onClick={startGame} size="lg">Play Again</Button>
-                <AiBanterBox gameName={GAME_NAME} gameOutcome={getGameOutcome()} />
+                <div className="flex gap-4">
+                   {gameWon && !gameOver && <Button onClick={() => setGameOver(true)} size="lg">Keep Playing</Button>}
+                   <Button onClick={startGame} size="lg">Play Again</Button>
+                </div>
+                {gameOver && <AiBanterBox gameName={GAME_NAME} gameOutcome={getGameOutcome()} />}
             </div>
         )}
       </div>
