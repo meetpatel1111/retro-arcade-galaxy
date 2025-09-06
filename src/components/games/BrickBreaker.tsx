@@ -50,6 +50,53 @@ type PowerUp = {
     active: boolean;
 };
 
+const BRICK_LAYOUTS = [
+    // Level 1: Standard rectangle
+    () => Array.from({ length: BRICK_COLUMN_COUNT }, () => Array.from({ length: BRICK_ROW_COUNT }, () => ({ x: 0, y: 0, status: 1 }))),
+    // Level 2: Pyramid
+    () => {
+        const bricks = Array.from({ length: BRICK_COLUMN_COUNT }, () => Array.from({ length: BRICK_ROW_COUNT }, () => ({ x: 0, y: 0, status: 0 })));
+        for(let r=0; r<BRICK_ROW_COUNT; r++) {
+            for(let c=r; c<BRICK_COLUMN_COUNT-r; c++) {
+                if(bricks[c] && bricks[c][r]) {
+                   bricks[c][r].status = 1;
+                }
+            }
+        }
+        return bricks;
+    },
+    // Level 3: Checkerboard
+    () => {
+        const bricks = createBricks();
+        for(let c=0; c<BRICK_COLUMN_COUNT; c++) {
+            for(let r=0; r<BRICK_ROW_COUNT; r++) {
+                if((c+r) % 2 === 0) bricks[c][r].status = 0;
+            }
+        }
+        return bricks;
+    },
+    // Level 4: Smile
+     () => {
+        const bricks = createBricks();
+        for(let c=0; c<BRICK_COLUMN_COUNT; c++) {
+            for(let r=0; r<BRICK_ROW_COUNT; r++) {
+                bricks[c][r].status = 0;
+            }
+        }
+        // Eyes
+        bricks[2][1].status = 1;
+        bricks[5][1].status = 1;
+        // Smile
+        bricks[1][3].status = 1;
+        bricks[2][4].status = 1;
+        bricks[3][4].status = 1;
+        bricks[4][4].status = 1;
+        bricks[5][4].status = 1;
+        bricks[6][3].status = 1;
+        return bricks;
+    },
+];
+
 const createBricks = (): Bricks => {
     return Array.from({ length: BRICK_COLUMN_COUNT }, () => 
         Array.from({ length: BRICK_ROW_COUNT }, () => ({ x: 0, y: 0, status: 1 }))
@@ -61,6 +108,7 @@ export default function BrickBreaker() {
     const [gameOver, setGameOver] = useState(true);
     const [gameWon, setGameWon] = useState(false);
     const [score, setScore] = useState(0);
+    const [level, setLevel] = useState(1);
     const [lives, setLives] = useState(3);
     const [difficulty, setDifficulty] = useState<Difficulty>('beginner');
     const { isHighScore, addHighScore } = useHighScores(GAME_ID);
@@ -85,8 +133,9 @@ export default function BrickBreaker() {
         difficultyRef.current = difficulty;
     }, [difficulty]);
 
-    const resetBricks = () => {
-        gameState.current.bricks = createBricks();
+    const resetBricksForLevel = (currentLevel: number) => {
+        const layoutIndex = (currentLevel - 1) % BRICK_LAYOUTS.length;
+        gameState.current.bricks = BRICK_LAYOUTS[layoutIndex]();
     }
 
     const resetPowerUps = () => {
@@ -95,33 +144,47 @@ export default function BrickBreaker() {
       paddleWidthRef.current = 100;
     }
 
-    const resetBallAndPaddle = () => {
+    const resetBallAndPaddle = useCallback((keepSpeed = false) => {
         const gs = gameState.current;
-        const { ballSpeed } = DIFFICULTY_SETTINGS[difficultyRef.current];
         gs.ballX = CANVAS_WIDTH / 2;
         gs.ballY = CANVAS_HEIGHT - PADDLE_HEIGHT - BALL_RADIUS - 5;
-        gs.ballDX = 0;
-        gs.ballDY = 0;
-        gs.paddleX = (CANVAS_WIDTH - paddleWidthRef.current) / 2;
-    };
-
-    const launchBall = () => {
-        const gs = gameState.current;
-        const { ballSpeed } = DIFFICULTY_SETTINGS[difficultyRef.current];
-        if (gs.ballDX === 0 && gs.ballDY === 0) {
-            gs.ballDX = ballSpeed * (Math.random() < 0.5 ? 1 : -1);
-            gs.ballDY = -ballSpeed;
+        if (!keepSpeed) {
+            gs.ballDX = 0;
+            gs.ballDY = 0;
         }
-    }
+        gs.paddleX = (CANVAS_WIDTH - paddleWidthRef.current) / 2;
+    }, []);
+
+    const launchBall = useCallback(() => {
+        const gs = gameState.current;
+        const baseSpeed = DIFFICULTY_SETTINGS[difficultyRef.current].ballSpeed;
+        const levelSpeedBonus = (level - 1) * 0.5;
+        const totalSpeed = baseSpeed + levelSpeedBonus;
+        
+        if (gs.ballDX === 0 && gs.ballDY === 0) {
+            gs.ballDX = totalSpeed * (Math.random() < 0.5 ? 1 : -1);
+            gs.ballDY = -totalSpeed;
+        }
+    }, [level]);
 
     const startGame = () => {
         setScore(0);
         setLives(3);
+        setLevel(1);
         setGameWon(false);
-        resetBricks();
+        resetBricksForLevel(1);
         resetPowerUps();
         resetBallAndPaddle();
         setGameOver(false);
+        setTimeout(launchBall, 500);
+    };
+
+    const nextLevel = () => {
+        const newLevel = level + 1;
+        setLevel(newLevel);
+        resetBricksForLevel(newLevel);
+        resetPowerUps();
+        resetBallAndPaddle();
         setTimeout(launchBall, 500);
     };
     
@@ -192,8 +255,11 @@ export default function BrickBreaker() {
     }, []);
 
     useEffect(() => {
-        draw();
+        if (!canvasRef.current) return;
+        const ctx = canvasRef.current.getContext('2d');
+        if (ctx) draw();
     }, [draw, gameOver]);
+
 
     const activateWidePaddle = () => {
         paddleWidthRef.current = 150;
@@ -295,13 +361,15 @@ export default function BrickBreaker() {
                 }
             }
             
-            const currentScore = score;
-            if (bricksLeft === 1) { 
-                const finalScore = currentScore + 10;
-                setScore(finalScore);
-                setGameWon(true);
-                setGameOver(true);
-                if(isHighScore(finalScore)) setShowHighScoreDialog(true);
+            if (bricksLeft === 0) { 
+                setScore(s => s + 100); // Level clear bonus
+                if (level >= BRICK_LAYOUTS.length) {
+                    setGameWon(true);
+                    setGameOver(true);
+                    if(isHighScore(score + 100)) setShowHighScoreDialog(true);
+                } else {
+                   nextLevel();
+                }
             }
 
             gs.ballX += gs.ballDX;
@@ -313,7 +381,7 @@ export default function BrickBreaker() {
         const intervalId = setInterval(gameLoop, 16); // ~60 FPS
         
         return () => clearInterval(intervalId);
-    }, [gameOver, draw, score, isHighScore]);
+    }, [gameOver, draw, score, isHighScore, level, launchBall, resetBallAndPaddle]);
 
 
     useEffect(() => {
@@ -349,6 +417,7 @@ export default function BrickBreaker() {
                     <div className="text-right min-w-[100px] text-lg font-bold">
                         <p>Score: <span className="text-accent">{score}</span></p>
                         <p>Lives: <span className="text-accent">{lives}</span></p>
+                        <p>Level: <span className="text-accent">{level}</span></p>
                     </div>
                 </div>
             </div>
@@ -358,7 +427,7 @@ export default function BrickBreaker() {
                 {gameOver && (
                     <div className="absolute inset-0 flex flex-col items-center justify-center bg-background/80 p-4 rounded-lg text-center">
                         <h2 className="text-5xl font-bold text-primary mb-2">
-                            {gameWon ? 'You Win!' : 'Game Over'}
+                            {gameWon ? 'You Beat All Levels!' : 'Game Over'}
                         </h2>
                         <p className="text-2xl mb-4">Final Score: {score}</p>
                         <HighScoreDialog 
