@@ -14,28 +14,37 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import PlayerAvatar from './PlayerAvatar';
 import LegendVideoGenerator from './LegendVideoGenerator';
+import type { HighScore } from '@/lib/types';
 
 interface HighScoreDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   score: number;
   gameName: string;
-  onSave: (playerName: string, avatarDataUri?: string) => void;
+  onSave: (newHighScore: Omit<HighScore, 'gameId' | 'gameName' | 'date'>) => void;
 }
 
 export default function HighScoreDialog({ open, onOpenChange, score, gameName, onSave }: HighScoreDialogProps) {
   const [playerName, setPlayerName] = useState("");
   const [avatarDataUri, setAvatarDataUri] = useState<string | undefined>();
   const [step, setStep] = useState(1);
+  const [savedHighScore, setSavedHighScore] = useState<Omit<HighScore, 'gameId' | 'gameName' | 'date'> | null>(null);
 
   const handleSave = () => {
-    onSave(playerName.trim() || "Player", avatarDataUri);
+    const newHighScore = { 
+        playerName: playerName.trim() || "Player", 
+        score, 
+        avatarDataUri 
+    };
+    onSave(newHighScore);
+    setSavedHighScore(newHighScore);
     setStep(2); // Move to video generation step
   };
 
   const handleClose = () => {
     setPlayerName("");
     setAvatarDataUri(undefined);
+    setSavedHighScore(null);
     setStep(1);
     onOpenChange(false);
   }
@@ -76,12 +85,13 @@ export default function HighScoreDialog({ open, onOpenChange, score, gameName, o
             </DialogFooter>
           </>
         )}
-        {step === 2 && (
+        {step === 2 && savedHighScore && (
             <LegendVideoGenerator 
-                playerName={playerName || "Player"} 
+                playerName={savedHighScore.playerName || "Player"} 
                 gameName={gameName} 
                 score={score}
                 onClose={handleClose}
+                highScoreData={savedHighScore}
             />
         )}
       </DialogContent>

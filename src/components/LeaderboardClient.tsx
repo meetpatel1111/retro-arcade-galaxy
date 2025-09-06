@@ -7,11 +7,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import Link from "next/link";
 import { Button } from "./ui/button";
 import { useHighScores } from "@/hooks/useHighScores";
-import { Trophy } from "lucide-react";
+import { Film, Trophy } from "lucide-react";
 import { Skeleton } from "./ui/skeleton";
 import PlayerBackstory from "./PlayerBackstory";
 import Image from 'next/image';
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "./ui/dialog";
 
 
 interface LeaderboardClientProps {
@@ -42,12 +43,12 @@ export default function LeaderboardClient({ game }: LeaderboardClientProps) {
                     <Table>
                         <TableHeader>
                             <TableRow>
-                                <TableHead className="w-[100px]">Rank</TableHead>
+                                <TableHead className="w-[80px]">Rank</TableHead>
                                 <TableHead>Player</TableHead>
                                 {game.id === 'all' && <TableHead>Game</TableHead>}
                                 <TableHead>Date</TableHead>
                                 <TableHead className="text-right">Score</TableHead>
-                                <TableHead className="text-right">Backstory</TableHead>
+                                <TableHead className="text-center">Legend</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -59,7 +60,7 @@ export default function LeaderboardClient({ game }: LeaderboardClientProps) {
                                         {game.id === 'all' && <TableCell><Skeleton className="h-4 w-24" /></TableCell>}
                                         <TableCell><Skeleton className="h-4 w-40" /></TableCell>
                                         <TableCell className="text-right"><Skeleton className="h-4 w-12 ml-auto" /></TableCell>
-                                        <TableCell className="text-right"><Skeleton className="h-8 w-24 ml-auto" /></TableCell>
+                                        <TableCell className="text-center"><Skeleton className="h-8 w-24 mx-auto" /></TableCell>
                                     </TableRow>
                                  ))
                             ) : scoresToShow.length > 0 ? scoresToShow.map((score, index) => (
@@ -77,8 +78,26 @@ export default function LeaderboardClient({ game }: LeaderboardClientProps) {
                                     {game.id === 'all' && <TableCell>{score.gameName}</TableCell>}
                                     <TableCell>{new Date(score.date).toLocaleString()}</TableCell>
                                     <TableCell className="text-right font-bold text-accent text-lg">{score.score}</TableCell>
-                                    <TableCell className="text-right">
-                                        <PlayerBackstory playerName={score.playerName} gameName={score.gameName} />
+                                    <TableCell className="text-center">
+                                        <div className="flex justify-center gap-2">
+                                            <PlayerBackstory playerName={score.playerName} gameName={score.gameName} />
+                                            {score.legendImageDataUri && (
+                                                <Dialog>
+                                                    <DialogTrigger asChild>
+                                                        <Button variant="outline" size="sm"><Film className="mr-2 h-4 w-4" /> View</Button>
+                                                    </DialogTrigger>
+                                                    <DialogContent className="max-w-xl">
+                                                        <DialogHeader>
+                                                            <DialogTitle>The Legend of {score.playerName}</DialogTitle>
+                                                            <DialogDescription>
+                                                                An AI-generated image capturing the epic high score moment in {score.gameName}.
+                                                            </DialogDescription>
+                                                        </DialogHeader>
+                                                        <Image src={score.legendImageDataUri} alt={`Legend of ${score.playerName}`} width={500} height={281} className="rounded-lg" />
+                                                    </DialogContent>
+                                                </Dialog>
+                                            )}
+                                        </div>
                                     </TableCell>
                                 </TableRow>
                             )) : (

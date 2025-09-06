@@ -43,6 +43,16 @@ export function useHighScores(gameId?: string) {
         setAllScores([...otherScores, ...updatedGameScores]);
     }
   };
+  
+  const updateHighScore = (updatedScore: HighScore) => {
+    setAllScores(prevScores => {
+        return prevScores.map(score => 
+            score.date === updatedScore.date && score.playerName === updatedScore.playerName
+            ? updatedScore
+            : score
+        );
+    });
+  }
 
-  return { highScores, allScores: sortedAllScores, isHighScore, addHighScore };
+  return { highScores, allScores: sortedAllScores, isHighScore, addHighScore, updateHighScore };
 }

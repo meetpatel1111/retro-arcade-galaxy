@@ -4,22 +4,26 @@ import { useState } from 'react';
 import { generateLegendVideo } from '@/ai/flows/ai-generate-legend-video';
 import { Button } from '@/components/ui/button';
 import { DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
-import { Film, Wand2, Download, Image as ImageIcon } from 'lucide-react';
+import { Download, Image as ImageIcon, Wand2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from './ui/skeleton';
 import Image from 'next/image';
+import type { HighScore } from '@/lib/types';
+import { useHighScores } from '@/hooks/useHighScores';
 
 interface LegendVideoGeneratorProps {
   playerName: string;
   gameName: string;
   score: number;
   onClose: () => void;
+  highScoreData: Omit<HighScore, 'gameId' | 'gameName' | 'date'>;
 }
 
-export default function LegendVideoGenerator({ playerName, gameName, score, onClose }: LegendVideoGeneratorProps) {
+export default function LegendVideoGenerator({ playerName, gameName, score, onClose, highScoreData }: LegendVideoGeneratorProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [imageDataUri, setImageDataUri] = useState<string | null>(null);
   const { toast } = useToast();
+  const { updateHighScore } = useHighScores(gameName.toLowerCase().replace(/\s/g, '-'));
 
   const handleGenerate = async () => {
     setIsLoading(true);
@@ -27,6 +31,19 @@ export default function LegendVideoGenerator({ playerName, gameName, score, onCl
     try {
       const res = await generateLegendVideo({ playerName, gameName, score });
       setImageDataUri(res.imageDataUri);
+      
+      const gameScores = JSON.parse(localStorage.getItem('high-scores') || '[]') as HighScore[];
+      const currentScore = gameScores.find(s => s.score === highScoreData.score && s.playerName === highScoreData.playerName);
+
+      if (currentScore) {
+          const updatedScore = { ...currentScore, legendImageDataUri: res.imageDataUri };
+          updateHighScore(updatedScore);
+          toast({
+            title: "Legend Image Saved!",
+            description: "Your epic moment has been saved to the leaderboard.",
+          });
+      }
+
     } catch (error) {
       console.error("Failed to generate legend image:", error);
       toast({
