@@ -1,3 +1,4 @@
+
 "use client";
 import { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
@@ -87,8 +88,12 @@ export default function Hangman() {
     const [showHighScoreDialog, setShowHighScoreDialog] = useState(false);
     const { isHighScore, addHighScore } = useHighScores(GAME_ID);
 
-    const fetchWord = useCallback(async () => {
+    const startGame = useCallback(async () => {
         setIsLoading(true);
+        setGuessedLetters([]);
+        setMistakes(0);
+        setGameOver(false);
+        setGameWon(false);
         try {
             const { word } = await generateHangmanWord({ difficulty });
             setWordToGuess(word.toLowerCase());
@@ -101,20 +106,12 @@ export default function Hangman() {
         }
     }, [difficulty]);
 
-    const startGame = useCallback(() => {
-        setGuessedLetters([]);
-        setMistakes(0);
-        setGameOver(false);
-        setGameWon(false);
-        fetchWord();
-    }, [fetchWord]);
-
     useEffect(() => {
         startGame();
-    }, [startGame]);
+    }, [startGame, difficulty]);
 
     const handleGuess = (letter: string) => {
-        if (gameOver || guessedLetters.includes(letter)) return;
+        if (gameOver || guessedLetters.includes(letter) || isLoading) return;
         
         const newGuessedLetters = [...guessedLetters, letter];
         setGuessedLetters(newGuessedLetters);
@@ -127,20 +124,22 @@ export default function Hangman() {
     const score = Math.max(0, (wordToGuess.length * 10) - (mistakes * 20) + (difficulty === 'intermediate' ? 50 : difficulty === 'expert' ? 100 : 0));
 
     useEffect(() => {
+        if (!wordToGuess || isLoading) return;
+
         if (mistakes >= MAX_MISTAKES) {
             setGameOver(true);
             setGameWon(false);
         }
         
         const isWordGuessed = wordToGuess.split('').every(letter => guessedLetters.includes(letter));
-        if (wordToGuess && isWordGuessed) {
+        if (isWordGuessed) {
             setGameOver(true);
             setGameWon(true);
             if (isHighScore(score)) {
                 setShowHighScoreDialog(true);
             }
         }
-    }, [mistakes, guessedLetters, wordToGuess, score, isHighScore]);
+    }, [mistakes, guessedLetters, wordToGuess, score, isHighScore, isLoading]);
     
     const getGameOutcome = () => {
         if(!gameOver) return null;
@@ -161,14 +160,14 @@ export default function Hangman() {
             </div>
             
             <div className="flex flex-col md:flex-row items-center justify-center gap-8 w-full">
-                <pre className="text-2xl font-mono bg-secondary/30 p-4 rounded-lg text-primary">
+                <pre className="text-2xl font-mono bg-secondary/30 p-4 rounded-lg text-primary min-w-[220px]">
                     {HANGMAN_PICS[mistakes]}
                 </pre>
                 <div className="flex flex-col items-center gap-8">
                     {isLoading ? (
                          <Skeleton className="h-12 w-64" />
                     ): (
-                        <p className="text-5xl tracking-[0.5em] font-bold">{maskedWord}</p>
+                        <p className="text-5xl tracking-[0.5em] font-bold min-h-[5rem] flex items-center">{maskedWord}</p>
                     )}
 
                     <div className="flex flex-wrap gap-2 justify-center max-w-md">
@@ -178,7 +177,7 @@ export default function Hangman() {
                                 variant="outline"
                                 size="icon"
                                 onClick={() => handleGuess(letter)}
-                                disabled={guessedLetters.includes(letter) || gameOver}
+                                disabled={guessedLetters.includes(letter) || gameOver || isLoading}
                                 className="w-10 h-10 text-xl"
                             >
                                 {letter.toUpperCase()}
