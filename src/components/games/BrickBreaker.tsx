@@ -39,6 +39,17 @@ type Brick = {
 };
 type Bricks = Brick[][];
 
+const createBricks = (): Bricks => {
+    const bricks: Bricks = [];
+    for (let c = 0; c < BRICK_COLUMN_COUNT; c++) {
+        bricks[c] = [];
+        for (let r = 0; r < BRICK_ROW_COUNT; r++) {
+            bricks[c][r] = { x: 0, y: 0, status: 1 };
+        }
+    }
+    return bricks;
+};
+
 export default function BrickBreaker() {
     const canvasRef = useRef<HTMLCanvasElement | null>(null);
     const [gameOver, setGameOver] = useState(true);
@@ -55,20 +66,13 @@ export default function BrickBreaker() {
         ballDX: 0,
         ballDY: 0,
         paddleX: (CANVAS_WIDTH - PADDLE_WIDTH) / 2,
-        bricks: [] as Bricks,
+        bricks: createBricks(),
         rightPressed: false,
         leftPressed: false,
     });
     
     const resetBricks = () => {
-        const bricks: Bricks = [];
-        for (let c = 0; c < BRICK_COLUMN_COUNT; c++) {
-            bricks[c] = [];
-            for (let r = 0; r < BRICK_ROW_COUNT; r++) {
-                bricks[c][r] = { x: 0, y: 0, status: 1 };
-            }
-        }
-        gameState.current.bricks = bricks;
+        gameState.current.bricks = createBricks();
     }
 
     const resetBallAndPaddle = () => {
@@ -88,7 +92,7 @@ export default function BrickBreaker() {
         resetBricks();
         resetBallAndPaddle();
         setGameOver(false);
-    }, []);
+    }, [difficulty]);
     
     const draw = useCallback(() => {
         const ctx = canvasRef.current?.getContext('2d');
@@ -135,6 +139,10 @@ export default function BrickBreaker() {
         ctx.closePath();
 
     }, []);
+
+    useEffect(() => {
+        draw();
+    }, [draw]);
 
     const gameLoop = useCallback(() => {
         if (gameOver) return;
@@ -201,7 +209,7 @@ export default function BrickBreaker() {
         
         draw();
         requestAnimationFrame(gameLoop);
-    }, [draw, difficulty, gameOver, lives, score, isHighScore]);
+    }, [draw, difficulty, gameOver, lives, score, isHighScore, resetBallAndPaddle]);
     
     useEffect(() => {
         if (!gameOver) {
