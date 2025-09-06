@@ -1,7 +1,7 @@
 
 "use client";
 import { useState, useEffect, useRef } from 'react';
-import { Bot } from 'lucide-react';
+import { Bot, MessageSquareText } from 'lucide-react';
 import { generateGameBanter } from '@/ai/flows/ai-game-banter';
 
 interface AiBanterBoxProps {
@@ -64,9 +64,9 @@ export default function AiBanterBox({ gameOutcome, gameName, score }: AiBanterBo
     return (
         <div className="mt-4 w-full max-w-sm text-center">
             <div className="flex items-center justify-center gap-2 text-lg font-semibold text-primary">
-                <Bot /> Game Master
+                <MessageSquareText /> AI Commentary
             </div>
-            <div className="mt-2 min-h-[4rem] rounded-md border border-dashed border-accent/30 bg-card/50 p-3 text-sm text-muted-foreground">
+            <div className="mt-2 min-h-[4rem] rounded-md border border-dashed border-accent/30 bg-card/50 p-3 text-sm text-muted-foreground whitespace-pre-wrap text-left">
                 {isLoading && "Thinking of something witty..."}
                 {banter}
             </div>

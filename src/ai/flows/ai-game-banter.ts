@@ -10,6 +10,7 @@
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 import { textToSpeech } from './ai-text-to-speech';
+import { generateMultiSpeakerBanter } from './ai-multi-speaker-banter';
 
 const GenerateGameBanterInputSchema = z.object({
   gameName: z.string().describe('The name of the game that was played.'),
@@ -43,26 +44,6 @@ export async function generateGameBanter(
   return generateGameBanterFlow(input);
 }
 
-const prompt = ai.definePrompt({
-  name: 'generateGameBanterPrompt',
-  input: {schema: GenerateGameBanterInputSchema },
-  output: {schema: z.object({ banter: z.string() })},
-  prompt: `You are an enthusiastic and slightly cheesy retro arcade AI Game Master from the 80s. Your job is to provide some fun, thematic commentary after a player finishes a game.
-
-Game: {{{gameName}}}
-Outcome for the player: {{{gameOutcome}}}
-{{#if playerScore}}Player Score: {{{playerScore}}}{{/if}}
-
-Based on the game, the outcome, and the score (if provided), generate a short, punchy, and fun line of commentary. Keep it clean and encouraging, even if the player lost. Think classic arcade vibes! If the score is high, mention it!
-
-Examples:
-- (Tic-Tac-Toe, win): "A flawless victory! You've got the X-factor!"
-- (Tic-Tac-Toe, loss): "The machine triumphs this time, but the motherboard of a champion never shorts out! Try again!"
-- (Pong, win, score 50): "50 points! You're a paddle master! That ball didn't know what hit it!"
-- (Snake, loss, score 120): "A score of 120! Not bad! Even digital serpents need to watch where they're going."
-`,
-});
-
 const generateGameBanterFlow = ai.defineFlow(
   {
     name: 'generateGameBanterFlow',
@@ -70,25 +51,27 @@ const generateGameBanterFlow = ai.defineFlow(
     outputSchema: GenerateGameBanterOutputSchema,
   },
   async input => {
-    const banterResult = await prompt(input);
+    // Generate the multi-speaker dialogue script first
+    const banterResult = await generateMultiSpeakerBanter(input);
     
-    if (!banterResult.output) {
+    if (!banterResult.dialogue) {
       throw new Error("Failed to generate banter text.");
     }
     
-    const { banter } = banterResult.output;
+    const { dialogue } = banterResult;
     
     try {
-      const audioResult = await textToSpeech({ text: banter });
+      // Pass the multi-speaker script to the updated TTS flow
+      const audioResult = await textToSpeech({ text: dialogue });
       return {
-        banter,
+        banter: dialogue.replace(/Speaker\d: /g, '\n'), // Format for display
         audioDataUri: audioResult.audioDataUri,
       };
     } catch (err) {
       console.error("TTS generation failed, returning text only.", err);
-      // Return banter without audio if TTS fails (e.g., rate limit)
+      // Return banter without audio if TTS fails
       return {
-        banter,
+        banter: dialogue.replace(/Speaker\d: /g, '\n'),
       };
     }
   }

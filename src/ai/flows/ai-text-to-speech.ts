@@ -1,6 +1,6 @@
 'use server';
 /**
- * @fileOverview A flow to convert text to speech.
+ * @fileOverview A flow to convert text to speech, supporting single or multi-speaker voices.
  *
  * - textToSpeech - Converts text to an audio data URI.
  * - TextToSpeechInput - The input type for the textToSpeech function.
@@ -12,7 +12,7 @@ import { googleAI } from '@genkit-ai/googleai';
 import wav from 'wav';
 
 const TextToSpeechInputSchema = z.object({
-  text: z.string().describe('The text to be converted to speech.'),
+  text: z.string().describe('The text to be converted to speech. For multi-speaker, format with "Speaker1: ..." and "Speaker2: ...".'),
 });
 export type TextToSpeechInput = z.infer<typeof TextToSpeechInputSchema>;
 
@@ -65,15 +65,34 @@ const textToSpeechFlow = ai.defineFlow(
     outputSchema: TextToSpeechOutputSchema,
   },
   async ({ text }) => {
+    const isMultiSpeaker = text.includes('Speaker1:') && text.includes('Speaker2:');
+    
+    const speechConfig = isMultiSpeaker
+      ? {
+          multiSpeakerVoiceConfig: {
+            speakerVoiceConfigs: [
+              {
+                speaker: 'Speaker1', // Game Master
+                voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Algenib' } },
+              },
+              {
+                speaker: 'Speaker2', // Sidekick
+                voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Achernar' } }, 
+              },
+            ],
+          },
+        }
+      : {
+          voiceConfig: {
+            prebuiltVoiceConfig: { voiceName: 'Algenib' },
+          },
+        };
+
     const { media } = await ai.generate({
       model: googleAI.model('gemini-2.5-flash-preview-tts'),
       config: {
         responseModalities: ['AUDIO'],
-        speechConfig: {
-          voiceConfig: {
-            prebuiltVoiceConfig: { voiceName: 'Algenib' },
-          },
-        },
+        speechConfig,
       },
       prompt: text,
     });
