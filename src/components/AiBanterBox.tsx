@@ -1,8 +1,9 @@
 
 "use client";
 import { useState, useEffect, useRef } from 'react';
-import { Bot, MessageSquareText } from 'lucide-react';
+import { Bot, MessageSquareText, PlayCircle } from 'lucide-react';
 import { generateGameBanter } from '@/ai/flows/ai-game-banter';
+import { Button } from './ui/button';
 
 interface AiBanterBoxProps {
     gameOutcome: 'win' | 'loss' | 'draw' | null;
@@ -12,6 +13,7 @@ interface AiBanterBoxProps {
 
 export default function AiBanterBox({ gameOutcome, gameName, score }: AiBanterBoxProps) {
     const [banter, setBanter] = useState<string | null>(null);
+    const [audioDataUri, setAudioDataUri] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const audioRef = useRef<HTMLAudioElement | null>(null);
     const hasFetched = useRef(false);
@@ -21,6 +23,7 @@ export default function AiBanterBox({ gameOutcome, gameName, score }: AiBanterBo
             hasFetched.current = true;
             setIsLoading(true);
             setBanter(null);
+            setAudioDataUri(null);
             if (audioRef.current) {
               audioRef.current.pause();
               audioRef.current = null;
@@ -33,14 +36,11 @@ export default function AiBanterBox({ gameOutcome, gameName, score }: AiBanterBo
                 setBanter(banterResponse.banter);
                 
                 if (banterResponse.audioDataUri) {
-                  const audio = new Audio(banterResponse.audioDataUri);
-                  audio.play();
-                  audioRef.current = audio;
+                    setAudioDataUri(banterResponse.audioDataUri);
                 }
 
               } catch (err: any) {
                 console.error("Error generating banter:", err);
-                // Check for rate limit error and handle gracefully
                 if (err.message && err.message.includes('429')) {
                     setBanter("My voice circuits are recharging! You'll have to read this one yourself.");
                 } else {
@@ -58,6 +58,18 @@ export default function AiBanterBox({ gameOutcome, gameName, score }: AiBanterBo
         }
 
     }, [gameOutcome, gameName, score]);
+    
+    const playAudio = () => {
+        if (audioDataUri) {
+            if (audioRef.current) {
+                audioRef.current.pause();
+            }
+            const audio = new Audio(audioDataUri);
+            audio.play();
+            audioRef.current = audio;
+        }
+    };
+
 
     if (!gameOutcome) return null;
 
@@ -70,6 +82,12 @@ export default function AiBanterBox({ gameOutcome, gameName, score }: AiBanterBo
                 {isLoading && "Thinking of something witty..."}
                 {banter}
             </div>
+            {audioDataUri && !isLoading && (
+                <Button onClick={playAudio} variant="outline" className="mt-2">
+                    <PlayCircle className="mr-2 h-4 w-4" />
+                    Play Commentary
+                </Button>
+            )}
         </div>
     );
 }
