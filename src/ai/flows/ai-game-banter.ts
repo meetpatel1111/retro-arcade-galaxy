@@ -27,6 +27,7 @@ const GenerateGameBanterOutputSchema = z.object({
     .describe('The generated banter from the AI Game Master.'),
   audioDataUri: z
     .string()
+    .optional()
     .describe(
       "The generated audio as a data URI. Expected format: 'data:audio/wav;base64,<encoded_data>'."
     ),
@@ -67,9 +68,7 @@ const generateGameBanterFlow = ai.defineFlow(
     outputSchema: GenerateGameBanterOutputSchema,
   },
   async input => {
-    // Run text generation and TTS in parallel
-    const banterPromise = prompt(input);
-    const [banterResult] = await Promise.all([banterPromise]);
+    const banterResult = await prompt(input);
     
     if (!banterResult.output) {
       throw new Error("Failed to generate banter text.");
@@ -77,11 +76,18 @@ const generateGameBanterFlow = ai.defineFlow(
     
     const { banter } = banterResult.output;
     
-    const audioResult = await textToSpeech({ text: banter });
-
-    return {
-      banter,
-      audioDataUri: audioResult.audioDataUri,
-    };
+    try {
+      const audioResult = await textToSpeech({ text: banter });
+      return {
+        banter,
+        audioDataUri: audioResult.audioDataUri,
+      };
+    } catch (err) {
+      console.error("TTS generation failed, returning text only.", err);
+      // Return banter without audio if TTS fails (e.g., rate limit)
+      return {
+        banter,
+      };
+    }
   }
 );

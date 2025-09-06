@@ -31,13 +31,20 @@ export default function AiBanterBox({ gameOutcome, gameName }: AiBanterBoxProps)
                 
                 setBanter(banterResponse.banter);
                 
-                const audio = new Audio(banterResponse.audioDataUri);
-                audio.play();
-                audioRef.current = audio;
+                if (banterResponse.audioDataUri) {
+                  const audio = new Audio(banterResponse.audioDataUri);
+                  audio.play();
+                  audioRef.current = audio;
+                }
 
-              } catch (err) {
+              } catch (err: any) {
                 console.error("Error generating banter:", err);
-                setBanter("Oops! My circuits are buzzing. Try again!");
+                // Check for rate limit error and handle gracefully
+                if (err.message && err.message.includes('429')) {
+                    setBanter("My voice circuits are recharging! You'll have to read this one yourself.");
+                } else {
+                    setBanter("Oops! My circuits are buzzing. Try again!");
+                }
               } finally {
                 setIsLoading(false);
               }
