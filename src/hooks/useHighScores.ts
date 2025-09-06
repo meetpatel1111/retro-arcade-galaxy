@@ -1,8 +1,10 @@
+
 "use client";
 import type { HighScore } from '@/lib/types';
 import useLocalStorage from './useLocalStorage';
 
 const MAX_SCORES_PER_GAME = 10;
+const MAX_TOTAL_LEGEND_IMAGES = 5; // Keep only the most recent legend images
 
 export function useHighScores(gameId?: string) {
   const [allScores, setAllScores] = useLocalStorage<HighScore[]>('high-scores', []);
@@ -46,11 +48,30 @@ export function useHighScores(gameId?: string) {
   
   const updateHighScore = (updatedScore: HighScore) => {
     setAllScores(prevScores => {
-        return prevScores.map(score => 
+        let scoresWithImages = prevScores.filter(s => s.legendImageDataUri);
+        
+        // Add the new score temporarily to check if we need to prune
+        const potentialNewScores = prevScores.map(score => 
             score.date === updatedScore.date && score.playerName === updatedScore.playerName
             ? updatedScore
             : score
         );
+
+        // If we have a new image and we're over the limit, prune the oldest one
+        if (updatedScore.legendImageDataUri && scoresWithImages.length >= MAX_TOTAL_LEGEND_IMAGES) {
+            scoresWithImages.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+            const oldestImageScore = scoresWithImages[MAX_TOTAL_LEGEND_IMAGES - 1];
+            
+            // Find the score to prune in the new list and remove its image data
+            for (let i = 0; i < potentialNewScores.length; i++) {
+                if (potentialNewScores[i].date === oldestImageScore.date) {
+                    delete potentialNewScores[i].legendImageDataUri;
+                    break;
+                }
+            }
+        }
+        
+        return potentialNewScores;
     });
   }
 
