@@ -9,6 +9,7 @@ import { Button } from "./ui/button";
 import { useHighScores } from "@/hooks/useHighScores";
 import { Trophy } from "lucide-react";
 import { Skeleton } from "./ui/skeleton";
+import PlayerBackstory from "./PlayerBackstory";
 
 
 interface LeaderboardClientProps {
@@ -44,6 +45,7 @@ export default function LeaderboardClient({ game }: LeaderboardClientProps) {
                                 {game.id === 'all' && <TableHead>Game</TableHead>}
                                 <TableHead>Date</TableHead>
                                 <TableHead className="text-right">Score</TableHead>
+                                <TableHead className="text-right">Backstory</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -55,6 +57,7 @@ export default function LeaderboardClient({ game }: LeaderboardClientProps) {
                                         {game.id === 'all' && <TableCell><Skeleton className="h-4 w-24" /></TableCell>}
                                         <TableCell><Skeleton className="h-4 w-40" /></TableCell>
                                         <TableCell className="text-right"><Skeleton className="h-4 w-12 ml-auto" /></TableCell>
+                                        <TableCell className="text-right"><Skeleton className="h-8 w-24 ml-auto" /></TableCell>
                                     </TableRow>
                                  ))
                             ) : scoresToShow.length > 0 ? scoresToShow.map((score, index) => (
@@ -64,10 +67,13 @@ export default function LeaderboardClient({ game }: LeaderboardClientProps) {
                                     {game.id === 'all' && <TableCell>{score.gameName}</TableCell>}
                                     <TableCell>{new Date(score.date).toLocaleString()}</TableCell>
                                     <TableCell className="text-right font-bold text-accent text-lg">{score.score}</TableCell>
+                                    <TableCell className="text-right">
+                                        <PlayerBackstory playerName={score.playerName} gameName={score.gameName} />
+                                    </TableCell>
                                 </TableRow>
                             )) : (
                                 <TableRow>
-                                    <TableCell colSpan={game.id === 'all' ? 5 : 4} className="text-center">No scores yet. Be the first!</TableCell>
+                                    <TableCell colSpan={game.id === 'all' ? 6 : 5} className="text-center">No scores yet. Be the first!</TableCell>
                                 </TableRow>
                             )}
                         </TableBody>
