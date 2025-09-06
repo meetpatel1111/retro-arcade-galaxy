@@ -75,6 +75,7 @@ export default function ConnectFour() {
   const [difficulty, setDifficulty] = useState<Difficulty>('beginner');
   const [showHighScoreDialog, setShowHighScoreDialog] = useState(false);
   const { isHighScore, addHighScore } = useHighScores(GAME_ID);
+  const [score, setScore] = useState(0);
 
   const handleColumnClick = (colIndex: number) => {
     if (winner || board[0][colIndex] || (gameMode === 'ai' && currentPlayer === '2')) return;
@@ -98,12 +99,14 @@ export default function ConnectFour() {
       const newWinner = checkWin(newBoard);
       if (newWinner) {
         setWinner(newWinner);
-        const score = newWinner === '1' ? 100 : (newWinner === '2' ? 0 : 50);
-        if (gameMode === 'ai' && isHighScore(score)) {
+        const finalScore = newWinner === '1' ? 100 : (newWinner === '2' ? 0 : 50);
+        setScore(finalScore);
+        if (gameMode === 'ai' && isHighScore(finalScore)) {
             setShowHighScoreDialog(true);
         }
       } else if (isBoardFull(newBoard)) {
         setIsDraw(true);
+        setScore(50);
       } else {
         setCurrentPlayer(player === '1' ? '2' : '1');
       }
@@ -115,6 +118,7 @@ export default function ConnectFour() {
       setCurrentPlayer('1');
       setWinner(null);
       setIsDraw(false);
+      setScore(0);
   }
 
   const getStatusMessage = () => {
@@ -179,8 +183,6 @@ export default function ConnectFour() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentPlayer, gameMode, winner, isDraw, board]);
 
-
-  const score = winner === '1' ? 100 : (winner === '2' ? 0 : 50);
   
   const getGameOutcome = () => {
     if (gameMode !== 'ai' || (!winner && !isDraw)) return null;
@@ -247,7 +249,7 @@ export default function ConnectFour() {
                   currentDifficulty={difficulty}
                   onDifficultyChange={(newDifficulty) => setDifficulty(newDifficulty as Difficulty)}
                 />
-                <AiBanterBox gameName={GAME_NAME} gameOutcome={getGameOutcome()} />
+                <AiBanterBox gameName={GAME_NAME} gameOutcome={getGameOutcome()} score={score} />
               </>
             )}
         </div>

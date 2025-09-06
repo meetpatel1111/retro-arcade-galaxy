@@ -7,9 +7,10 @@ import { generateGameBanter } from '@/ai/flows/ai-game-banter';
 interface AiBanterBoxProps {
     gameOutcome: 'win' | 'loss' | 'draw' | null;
     gameName: string;
+    score?: number;
 }
 
-export default function AiBanterBox({ gameOutcome, gameName }: AiBanterBoxProps) {
+export default function AiBanterBox({ gameOutcome, gameName, score }: AiBanterBoxProps) {
     const [banter, setBanter] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -27,7 +28,7 @@ export default function AiBanterBox({ gameOutcome, gameName }: AiBanterBoxProps)
 
             const getBanter = async () => {
               try {
-                const banterResponse = await generateGameBanter({ gameName, gameOutcome });
+                const banterResponse = await generateGameBanter({ gameName, gameOutcome, playerScore: score });
                 
                 setBanter(banterResponse.banter);
                 
@@ -56,7 +57,7 @@ export default function AiBanterBox({ gameOutcome, gameName }: AiBanterBoxProps)
             hasFetched.current = false;
         }
 
-    }, [gameOutcome, gameName]);
+    }, [gameOutcome, gameName, score]);
 
     if (!gameOutcome) return null;
 

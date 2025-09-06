@@ -16,6 +16,7 @@ const GenerateGameBanterInputSchema = z.object({
   gameOutcome: z
     .enum(['win', 'loss', 'draw'])
     .describe('The outcome of the game from the player perspective.'),
+  playerScore: z.number().optional().describe('The final score of the player.'),
 });
 export type GenerateGameBanterInput = z.infer<
   typeof GenerateGameBanterInputSchema
@@ -44,20 +45,21 @@ export async function generateGameBanter(
 
 const prompt = ai.definePrompt({
   name: 'generateGameBanterPrompt',
-  input: {schema: z.object({ gameName: z.string(), gameOutcome: z.string() })},
+  input: {schema: GenerateGameBanterInputSchema },
   output: {schema: z.object({ banter: z.string() })},
   prompt: `You are an enthusiastic and slightly cheesy retro arcade AI Game Master from the 80s. Your job is to provide some fun, thematic commentary after a player finishes a game.
 
 Game: {{{gameName}}}
 Outcome for the player: {{{gameOutcome}}}
+{{#if playerScore}}Player Score: {{{playerScore}}}{{/if}}
 
-Based on the game and the outcome, generate a short, punchy, and fun line of commentary. Keep it clean and encouraging, even if the player lost. Think classic arcade vibes!
+Based on the game, the outcome, and the score (if provided), generate a short, punchy, and fun line of commentary. Keep it clean and encouraging, even if the player lost. Think classic arcade vibes! If the score is high, mention it!
 
 Examples:
 - (Tic-Tac-Toe, win): "A flawless victory! You've got the X-factor!"
 - (Tic-Tac-Toe, loss): "The machine triumphs this time, but the motherboard of a champion never shorts out! Try again!"
-- (Pong, win): "You're a paddle master! That ball didn't know what hit it!"
-- (Snake, loss): "Crashed and burned! Even digital serpents need to watch where they're going."
+- (Pong, win, score 50): "50 points! You're a paddle master! That ball didn't know what hit it!"
+- (Snake, loss, score 120): "A score of 120! Not bad! Even digital serpents need to watch where they're going."
 `,
 });
 
