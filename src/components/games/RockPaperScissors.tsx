@@ -180,7 +180,7 @@ export default function RockPaperScissors() {
                         currentDifficulty={difficulty}
                         onDifficultyChange={(newDifficulty) => setDifficulty(newDifficulty as Difficulty)}
                     />
-                    <AiBanterBox gameName={GAME_NAME} gameOutcome={getGameOutcome()} />
+                    <AiBanterBox gameName={GAME_NAME} gameOutcome={getGameOutcome()} score={finalScore} />
                 </div>
             ) : (
                 <div className="mt-8 flex gap-4">

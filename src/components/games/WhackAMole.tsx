@@ -104,22 +104,21 @@ export default function WhackAMole() {
     };
 
     const whackMole = (index: number) => {
-        if (gameOver) return;
-        if (moles.includes(index)) {
-            setScore(prev => prev + 10 * level);
-            setMoles(prevMoles => prevMoles.filter(m => m !== index));
-        }
+      if (moles.includes(index)) {
+        setScore(prev => prev + 10 * level);
+        setMoles(prevMoles => prevMoles.filter(m => m !== index));
+      }
     };
-
+    
     const handleHoleClick = (index: number) => {
-        if (gameOver) return;
-        if (moles.includes(index)) {
-            whackMole(index);
-        } else {
-            // Penalty for missing
-            setScore(prev => Math.max(0, prev - 5));
-        }
-    }
+      if (gameOver) return;
+      if (moles.includes(index)) {
+        whackMole(index);
+      } else {
+        // Penalty for missing
+        setScore(prev => Math.max(0, prev - 5));
+      }
+    };
 
     const handleSaveScore = (playerName: string) => {
         addHighScore({ score, playerName });
@@ -169,7 +168,7 @@ export default function WhackAMole() {
                                 currentDifficulty={difficulty}
                                 onDifficultyChange={(newDifficulty) => setDifficulty(newDifficulty as Difficulty)}
                             />
-                            <AiBanterBox gameName={GAME_NAME} gameOutcome={getGameOutcome()} />
+                            <AiBanterBox gameName={GAME_NAME} gameOutcome={getGameOutcome()} score={score} />
                         </div>
                     }
                 </div>

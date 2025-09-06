@@ -9,6 +9,7 @@ import HighScoreDialog from '../HighScoreDialog';
 import AiBanterBox from '../AiBanterBox';
 import DifficultyAdjuster from '../DifficultyAdjuster';
 import { cn } from '@/lib/utils';
+import AiCheatCode from '../AiCheatCode';
 
 const GAME_ID = 'brick-breaker';
 const GAME_NAME = 'Brick Breaker';
@@ -437,7 +438,10 @@ export default function BrickBreaker() {
                             gameName={GAME_NAME}
                             onSave={(name) => addHighScore({ playerName: name, score })}
                         />
-                        <Button onClick={startGame} size="lg">Start Game</Button>
+                         <div className="flex gap-4">
+                            <Button onClick={startGame} size="lg">Start Game</Button>
+                            <AiCheatCode gameName={GAME_NAME} />
+                        </div>
                         <div className="flex flex-col items-center mt-4">
                             <DifficultyAdjuster 
                                 gameName={GAME_NAME}
@@ -445,7 +449,7 @@ export default function BrickBreaker() {
                                 currentDifficulty={difficulty}
                                 onDifficultyChange={(d) => setDifficulty(d as Difficulty)}
                             />
-                            <AiBanterBox gameName={GAME_NAME} gameOutcome={getGameOutcome()} />
+                            <AiBanterBox gameName={GAME_NAME} gameOutcome={getGameOutcome()} score={score} />
                         </div>
                     </div>
                 )}

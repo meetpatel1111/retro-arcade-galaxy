@@ -7,6 +7,7 @@ import { Trophy } from 'lucide-react';
 import { useHighScores } from '@/hooks/useHighScores';
 import HighScoreDialog from '../HighScoreDialog';
 import AiBanterBox from '../AiBanterBox';
+import AiCheatCode from '../AiCheatCode';
 
 const GAME_ID = 'space-invaders';
 const GAME_NAME = 'Space Invaders';
@@ -273,8 +274,11 @@ export default function SpaceInvaders() {
               gameName={GAME_NAME}
               onSave={(name) => addHighScore({ playerName: name, score })}
             />
-            <Button onClick={resetGame} size="lg">Start Game</Button>
-            <AiBanterBox gameName={GAME_NAME} gameOutcome={getGameOutcome()} />
+             <div className="flex gap-4">
+                <Button onClick={resetGame} size="lg">Start Game</Button>
+                <AiCheatCode gameName={GAME_NAME} />
+            </div>
+            <AiBanterBox gameName={GAME_NAME} gameOutcome={getGameOutcome()} score={score} />
           </div>
         )}
       </div>

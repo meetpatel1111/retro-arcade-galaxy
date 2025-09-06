@@ -8,6 +8,7 @@ import { ArrowUp, ArrowDown, ArrowLeft, ArrowRight, Trophy } from 'lucide-react'
 import HighScoreDialog from '../HighScoreDialog';
 import { useHighScores } from '@/hooks/useHighScores';
 import AiBanterBox from '../AiBanterBox';
+import AiCheatCode from '../AiCheatCode';
 
 const GAME_ID = 'snake';
 const GAME_NAME = 'Snake';
@@ -210,14 +211,17 @@ export default function Snake() {
                             gameName={GAME_NAME}
                             onSave={(playerName) => addHighScore({ score, playerName })}
                         />
-                        <Button onClick={startGame} size="lg">Play Again</Button>
+                        <div className="flex gap-4">
+                            <Button onClick={startGame} size="lg">Play Again</Button>
+                            <AiCheatCode gameName={GAME_NAME} />
+                        </div>
                          <DifficultyAdjuster 
                             gameName="Snake"
                             playerScore={score}
                             currentDifficulty={difficulty}
                             onDifficultyChange={(newDifficulty) => setDifficulty(newDifficulty as Difficulty)}
                         />
-                        <AiBanterBox gameName={GAME_NAME} gameOutcome={getGameOutcome()} />
+                        <AiBanterBox gameName={GAME_NAME} gameOutcome={getGameOutcome()} score={score} />
                     </div>
                 )}
             </div>

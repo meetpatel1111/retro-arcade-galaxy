@@ -283,7 +283,7 @@ export default function Minesweeper() {
               currentDifficulty={difficulty}
               onDifficultyChange={(newDifficulty) => setDifficulty(newDifficulty as Difficulty)}
             />
-            <AiBanterBox gameName={GAME_NAME} gameOutcome={getGameOutcome()} />
+            <AiBanterBox gameName={GAME_NAME} gameOutcome={getGameOutcome()} score={score} />
         </div>
       )}
     </div>

@@ -57,8 +57,8 @@ export default function PixelPilot() {
     const gs = gameState.current;
     gs.shipY = CANVAS_HEIGHT / 2;
     gs.velocityY = 0;
-    const initialGap = DIFFICULTY_SETTINGS[difficultyRef.current].gap;
-    gs.obstacles = [{ x: CANVAS_WIDTH, y: Math.random() * (CANVAS_HEIGHT - initialGap - 40) + 20, passed: false }];
+    const { gap } = DIFFICULTY_SETTINGS[difficultyRef.current];
+    gs.obstacles = [{ x: CANVAS_WIDTH, y: Math.random() * (CANVAS_HEIGHT - gap - 40) + 20, passed: false }];
     gs.frameCount = 0;
     setScore(0);
     setGameOver(false);
@@ -86,7 +86,7 @@ export default function PixelPilot() {
     // Draw obstacles
     ctx.fillStyle = accentColor;
     gs.obstacles.forEach(obstacle => {
-      const gap = DIFFICULTY_SETTINGS[difficultyRef.current].gap;
+      const { gap } = DIFFICULTY_SETTINGS[difficultyRef.current];
       ctx.fillRect(obstacle.x, 0, OBSTACLE_WIDTH, obstacle.y);
       ctx.fillRect(obstacle.x, obstacle.y + gap, OBSTACLE_WIDTH, CANVAS_HEIGHT - obstacle.y - gap);
     });
@@ -223,7 +223,7 @@ export default function PixelPilot() {
                 currentDifficulty={difficulty}
                 onDifficultyChange={(d) => setDifficulty(d as Difficulty)}
               />
-              <AiBanterBox gameName={GAME_NAME} gameOutcome={getGameOutcome()} />
+              <AiBanterBox gameName={GAME_NAME} gameOutcome={getGameOutcome()} score={score} />
             </div>
           </div>
         )}

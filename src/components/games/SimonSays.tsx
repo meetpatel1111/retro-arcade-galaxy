@@ -150,7 +150,7 @@ export default function SimonSays() {
                                 currentDifficulty={difficulty}
                                 onDifficultyChange={(d) => setDifficulty(d as Difficulty)}
                             />
-                            <AiBanterBox gameName={GAME_NAME} gameOutcome={getGameOutcome()} />
+                            <AiBanterBox gameName={GAME_NAME} gameOutcome={getGameOutcome()} score={score} />
                         </div>
                     }
                 </div>
