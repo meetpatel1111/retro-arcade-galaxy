@@ -19,8 +19,6 @@ const SHIP_HEIGHT = 20;
 const GRAVITY = 0.3;
 const LIFT = -6;
 const OBSTACLE_WIDTH = 60;
-const OBSTACLE_GAP = 150;
-const OBSTACLE_SPEED = 3;
 
 type Difficulty = 'beginner' | 'intermediate' | 'expert';
 const DIFFICULTY_SETTINGS = {
@@ -31,7 +29,7 @@ const DIFFICULTY_SETTINGS = {
 
 type Obstacle = {
   x: number;
-  y: number;
+  y: number; // This is the top of the gap
   passed: boolean;
 };
 
@@ -59,7 +57,8 @@ export default function PixelPilot() {
     const gs = gameState.current;
     gs.shipY = CANVAS_HEIGHT / 2;
     gs.velocityY = 0;
-    gs.obstacles = [{ x: CANVAS_WIDTH, y: Math.random() * (CANVAS_HEIGHT - 200) + 100, passed: false }];
+    const initialGap = DIFFICULTY_SETTINGS[difficultyRef.current].gap;
+    gs.obstacles = [{ x: CANVAS_WIDTH, y: Math.random() * (CANVAS_HEIGHT - initialGap - 40) + 20, passed: false }];
     gs.frameCount = 0;
     setScore(0);
     setGameOver(false);
@@ -87,8 +86,9 @@ export default function PixelPilot() {
     // Draw obstacles
     ctx.fillStyle = accentColor;
     gs.obstacles.forEach(obstacle => {
+      const gap = DIFFICULTY_SETTINGS[difficultyRef.current].gap;
       ctx.fillRect(obstacle.x, 0, OBSTACLE_WIDTH, obstacle.y);
-      ctx.fillRect(obstacle.x, obstacle.y + DIFFICULTY_SETTINGS[difficultyRef.current].gap, OBSTACLE_WIDTH, CANVAS_HEIGHT);
+      ctx.fillRect(obstacle.x, obstacle.y + gap, OBSTACLE_WIDTH, CANVAS_HEIGHT - obstacle.y - gap);
     });
 
     // Draw ship
@@ -143,10 +143,10 @@ export default function PixelPilot() {
           gs.obstacles.shift();
       }
 
-      if (gs.frameCount % 100 === 0) {
+      if (gs.frameCount % Math.floor(150 / speed) === 0) { // Add obstacles based on speed
         gs.obstacles.push({
             x: CANVAS_WIDTH,
-            y: Math.random() * (CANVAS_HEIGHT - gap - 50) + 25,
+            y: Math.random() * (CANVAS_HEIGHT - gap - 40) + 20, // Keep gap from being too high or low
             passed: false
         });
       }
