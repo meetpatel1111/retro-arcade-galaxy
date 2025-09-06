@@ -1,5 +1,5 @@
 import type { Game } from '@/lib/types';
-import { BrainCircuit, Puzzle, Zap, GitCommitHorizontal, Hammer, X, Rows4, MoveHorizontal, Bomb, Star, CaseSensitive, Scissors, VenetianMask } from 'lucide-react';
+import { BrainCircuit, Puzzle, Zap, GitCommitHorizontal, Hammer, X, Rows4, MoveHorizontal, Bomb, Star, CaseSensitive, Scissors, VenetianMask, Pointer, Dice5 } from 'lucide-react';
 
 export const GAMES: Game[] = [
   {
@@ -85,5 +85,19 @@ export const GAMES: Game[] = [
     description: 'Guess the word before it\'s too late.',
     icon: VenetianMask,
     href: '/games/hangman',
+  },
+  {
+    id: 'simon-says',
+    name: 'Simon Says',
+    description: 'Repeat the pattern of colors and sounds.',
+    icon: Dice5,
+    href: '/games/simon-says',
+  },
+  {
+    id: 'brick-breaker',
+    name: 'Brick Breaker',
+    description: 'Break all the bricks to win.',
+    icon: Pointer,
+    href: '/games/brick-breaker',
   },
 ];
