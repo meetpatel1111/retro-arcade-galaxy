@@ -13,16 +13,16 @@ import { googleAI } from '@genkit-ai/googleai';
 
 const GenerateLegendVideoInputSchema = z.object({
   playerName: z.string().describe('The name of the player.'),
-  gameName: z.string().describe('The name of the game the high score was achieved in.'),
+  gameName: z.string().describe('The name of the high score was achieved in.'),
   score: z.number().describe('The score achieved by the player.'),
 });
 export type GenerateLegendVideoInput = z.infer<typeof GenerateLegendVideoInputSchema>;
 
 const GenerateLegendVideoOutputSchema = z.object({
-  videoDataUri: z
+  imageDataUri: z
     .string()
     .describe(
-      "The generated video as a data URI. Expected format: 'data:video/mp4;base64,<encoded_data>'."
+      "The generated image as a data URI. Expected format: 'data:image/png;base64,<encoded_data>'."
     ),
 });
 export type GenerateLegendVideoOutput = z.infer<typeof GenerateLegendVideoOutputSchema>;
@@ -40,51 +40,18 @@ const generateLegendVideoFlow = ai.defineFlow(
     outputSchema: GenerateLegendVideoOutputSchema,
   },
   async ({ playerName, gameName, score }) => {
-    let { operation } = await ai.generate({
-        model: googleAI.model('veo-2.0-generate-001'),
-        prompt: `Generate a short, epic, cinematic, 8-bit retro arcade style video celebrating the legendary moment for a player named "${playerName}" who just achieved a high score of ${score} in the game "${gameName}". The video should be dynamic, exciting, and feel like a classic video game cutscene.`,
+    const { media } = await ai.generate({
+        model: googleAI.model('gemini-2.5-flash-image-preview'),
+        prompt: `Generate an epic, cinematic, 8-bit retro arcade style image celebrating the legendary moment for a player named "${playerName}" who just achieved a high score of ${score} in the game "${gameName}". The image should be dynamic, exciting, and feel like a classic video game poster.`,
         config: {
-            durationSeconds: 5,
-            aspectRatio: '16:9',
+            responseModalities: ['IMAGE'],
         },
     });
 
-    if (!operation) {
-        throw new Error('Expected the model to return an operation');
+    if (!media) {
+      throw new Error('Image generation failed.');
     }
 
-    // Wait until the operation completes.
-    while (!operation.done) {
-        operation = await ai.checkOperation(operation);
-        // Sleep for 5 seconds before checking again.
-        await new Promise((resolve) => setTimeout(resolve, 5000));
-    }
-
-    if (operation.error) {
-        throw new Error('Failed to generate video: ' + operation.error.message);
-    }
-    
-    const video = operation.output?.message?.content.find((p) => !!p.media);
-    if (!video || !video.media?.url) {
-        throw new Error('Failed to find the generated video');
-    }
-
-    // The media URL from Veo is a temporary download link. We need to fetch it and convert to a data URI.
-    const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) {
-      throw new Error('GEMINI_API_KEY environment variable is not set.');
-    }
-    const fetch = (await import('node-fetch')).default;
-    const videoDownloadResponse = await fetch(`${video.media.url}&key=${apiKey}`);
-    
-    if (!videoDownloadResponse.ok || !videoDownloadResponse.body) {
-      throw new Error(`Failed to download video: ${videoDownloadResponse.statusText}`);
-    }
-
-    const videoBuffer = await videoDownloadResponse.buffer();
-    const videoBase64 = videoBuffer.toString('base64');
-    const videoDataUri = `data:video/mp4;base64,${videoBase64}`;
-
-    return { videoDataUri };
+    return { imageDataUri: media.url };
   }
 );
