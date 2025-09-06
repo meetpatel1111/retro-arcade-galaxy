@@ -1,5 +1,5 @@
 import type { Game } from '@/lib/types';
-import { BrainCircuit, Puzzle, Zap, GitCommitHorizontal, Hammer, X, Rows4, MoveHorizontal, Bomb, Star, CaseSensitive, Scissors, VenetianMask, Pointer, Dice5, Keyboard, Plane } from 'lucide-react';
+import { BrainCircuit, Puzzle, Zap, GitCommitHorizontal, Hammer, X, Rows4, MoveHorizontal, Bomb, Star, CaseSensitive, Scissors, VenetianMask, Pointer, Dice5, Keyboard, Plane, Rocket, AppWindow } from 'lucide-react';
 
 export const GAMES: Game[] = [
   {
@@ -113,5 +113,19 @@ export const GAMES: Game[] = [
     description: 'Navigate your ship through the obstacles.',
     icon: Plane,
     href: '/games/pixel-pilot',
+  },
+  {
+    id: '2048',
+    name: '2048',
+    description: 'Slide tiles to combine them and reach 2048.',
+    icon: AppWindow,
+    href: '/games/twenty-forty-eight',
+  },
+  {
+    id: 'space-invaders',
+    name: 'Space Invaders',
+    description: 'Defend the galaxy from alien invaders.',
+    icon: Rocket,
+    href: '/games/space-invaders',
   },
 ];
