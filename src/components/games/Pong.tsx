@@ -63,16 +63,22 @@ export default function Pong() {
   const [gameMode, setGameMode] = useState<'player' | 'ai'>('ai');
   const [showHighScoreDialog, setShowHighScoreDialog] = useState(false);
   const { isHighScore, addHighScore } = useHighScores(GAME_ID);
+  
+  const difficultyRef = useRef(difficulty);
+  useEffect(() => {
+    difficultyRef.current = difficulty;
+  }, [difficulty]);
 
-  const resetBall = useCallback((direction: 'left' | 'right') => {
+  const resetBall = (direction: 'left' | 'right') => {
     const gs = gameStateRef.current;
     gs.ballX = CANVAS_WIDTH / 2;
     gs.ballY = CANVAS_HEIGHT / 2;
-    gs.ballSpeedX = (direction === 'left' ? -1 : 1) * DIFFICULTY_SETTINGS[difficulty].ballSpeed;
-    gs.ballSpeedY = (Math.random() > 0.5 ? 1 : -1) * (DIFFICULTY_SETTINGS[difficulty].ballSpeed / 2);
-  }, [difficulty]);
+    const { ballSpeed } = DIFFICULTY_SETTINGS[difficultyRef.current];
+    gs.ballSpeedX = (direction === 'left' ? -1 : 1) * ballSpeed;
+    gs.ballSpeedY = (Math.random() > 0.5 ? 1 : -1) * (ballSpeed / 2);
+  };
 
-  const startGame = useCallback(() => {
+  const startGame = () => {
     const gs = gameStateRef.current;
     gs.score1 = 0;
     gs.score2 = 0;
@@ -82,7 +88,7 @@ export default function Pong() {
     gs.paddle1Y = CANVAS_HEIGHT / 2 - PADDLE_HEIGHT / 2;
     gs.paddle2Y = CANVAS_HEIGHT / 2 - PADDLE_HEIGHT / 2;
     resetBall(Math.random() > 0.5 ? 'left' : 'right');
-  }, [resetBall]);
+  };
   
   const draw = useCallback(() => {
     const canvas = canvasRef.current;
@@ -117,99 +123,97 @@ export default function Pong() {
     ctx.fill();
   }, [])
 
-  const gameLoop = useCallback(() => {
+  useEffect(() => {
+    draw();
+  }, [draw, gameOver])
+  
+  useEffect(() => {
     if (gameOver) return;
-
-    const gs = gameStateRef.current;
-    const { aiSpeed } = DIFFICULTY_SETTINGS[difficulty];
     
-    // Move ball
-    gs.ballX += gs.ballSpeedX;
-    gs.ballY += gs.ballSpeedY;
+    const gameLoop = () => {
+        const gs = gameStateRef.current;
+        const { aiSpeed } = DIFFICULTY_SETTINGS[difficultyRef.current];
+        
+        // Move ball
+        gs.ballX += gs.ballSpeedX;
+        gs.ballY += gs.ballSpeedY;
 
-    // Move paddles
-    gs.paddle1Y += gs.paddle1Velocity;
-    if (gs.paddle1Y < 0) gs.paddle1Y = 0;
-    if (gs.paddle1Y > CANVAS_HEIGHT - PADDLE_HEIGHT) gs.paddle1Y = CANVAS_HEIGHT - PADDLE_HEIGHT;
+        // Move paddles
+        gs.paddle1Y += gs.paddle1Velocity;
+        if (gs.paddle1Y < 0) gs.paddle1Y = 0;
+        if (gs.paddle1Y > CANVAS_HEIGHT - PADDLE_HEIGHT) gs.paddle1Y = CANVAS_HEIGHT - PADDLE_HEIGHT;
 
-    gs.paddle2Y += gs.paddle2Velocity;
-    if (gs.paddle2Y < 0) gs.paddle2Y = 0;
-    if (gs.paddle2Y > CANVAS_HEIGHT - PADDLE_HEIGHT) gs.paddle2Y = CANVAS_HEIGHT - PADDLE_HEIGHT;
+        gs.paddle2Y += gs.paddle2Velocity;
+        if (gs.paddle2Y < 0) gs.paddle2Y = 0;
+        if (gs.paddle2Y > CANVAS_HEIGHT - PADDLE_HEIGHT) gs.paddle2Y = CANVAS_HEIGHT - PADDLE_HEIGHT;
 
-    // AI movement
-    if (gameMode === 'ai') {
-      const paddleCenter = gs.paddle2Y + PADDLE_HEIGHT / 2;
-      if (paddleCenter < gs.ballY - 20) {
-        gs.paddle2Y += aiSpeed;
-      } else if (paddleCenter > gs.ballY + 20) {
-        gs.paddle2Y -= aiSpeed;
-      }
-    }
+        // AI movement
+        if (gameMode === 'ai') {
+          const paddleCenter = gs.paddle2Y + PADDLE_HEIGHT / 2;
+          if (paddleCenter < gs.ballY - 20) {
+            gs.paddle2Y += aiSpeed;
+          } else if (paddleCenter > gs.ballY + 20) {
+            gs.paddle2Y -= aiSpeed;
+          }
+        }
+        
+        // Ball collision with top/bottom walls
+        if (gs.ballY < BALL_RADIUS || gs.ballY > CANVAS_HEIGHT - BALL_RADIUS) {
+          gs.ballSpeedY = -gs.ballSpeedY;
+        }
+
+        // Ball collision with paddles
+        if (
+          gs.ballX - BALL_RADIUS < PADDLE_WIDTH + 5 && gs.ballX - BALL_RADIUS > 0 &&
+          gs.ballY > gs.paddle1Y &&
+          gs.ballY < gs.paddle1Y + PADDLE_HEIGHT
+        ) {
+          gs.ballSpeedX = -gs.ballSpeedX;
+          let deltaY = gs.ballY - (gs.paddle1Y + PADDLE_HEIGHT/2);
+          gs.ballSpeedY = deltaY * 0.35;
+        }
+        
+        if (
+            gs.ballX + BALL_RADIUS > CANVAS_WIDTH - PADDLE_WIDTH - 5 && gs.ballX + BALL_RADIUS < CANVAS_WIDTH &&
+            gs.ballY > gs.paddle2Y &&
+            gs.ballY < gs.paddle2Y + PADDLE_HEIGHT
+        ) {
+            gs.ballSpeedX = -gs.ballSpeedX;
+            let deltaY = gs.ballY - (gs.paddle2Y + PADDLE_HEIGHT/2);
+            gs.ballSpeedY = deltaY * 0.35;
+        }
+
+        // Scoring
+        if (gs.ballX < 0) {
+          gs.score2++;
+          setScores({ player1: gs.score1, player2: gs.score2 });
+          resetBall('left');
+        } else if (gs.ballX > CANVAS_WIDTH) {
+          gs.score1++;
+          setScores({ player1: gs.score1, player2: gs.score2 });
+          resetBall('right');
+        }
+        
+        // Check for winner
+        if (gs.score1 >= WINNING_SCORE) {
+          setWinner('Player 1');
+          setGameOver(true);
+          const score = gs.score1 * 10 - gs.score2 * 5;
+          if (isHighScore(score)) {
+              setShowHighScoreDialog(true);
+          }
+        } else if (gs.score2 >= WINNING_SCORE) {
+          setWinner(gameMode === 'ai' ? 'AI' : 'Player 2');
+          setGameOver(true);
+        }
+
+        draw();
+    };
+
+    const intervalId = setInterval(gameLoop, 16); // ~60 FPS
     
-    // Ball collision with top/bottom walls
-    if (gs.ballY < BALL_RADIUS || gs.ballY > CANVAS_HEIGHT - BALL_RADIUS) {
-      gs.ballSpeedY = -gs.ballSpeedY;
-    }
-
-    // Ball collision with paddles
-    if (
-      gs.ballX - BALL_RADIUS < PADDLE_WIDTH + 5 && gs.ballX - BALL_RADIUS > 0 &&
-      gs.ballY > gs.paddle1Y &&
-      gs.ballY < gs.paddle1Y + PADDLE_HEIGHT
-    ) {
-      gs.ballSpeedX = -gs.ballSpeedX;
-      let deltaY = gs.ballY - (gs.paddle1Y + PADDLE_HEIGHT/2);
-      gs.ballSpeedY = deltaY * 0.35;
-    }
-    
-    if (
-        gs.ballX + BALL_RADIUS > CANVAS_WIDTH - PADDLE_WIDTH - 5 && gs.ballX + BALL_RADIUS < CANVAS_WIDTH &&
-        gs.ballY > gs.paddle2Y &&
-        gs.ballY < gs.paddle2Y + PADDLE_HEIGHT
-    ) {
-        gs.ballSpeedX = -gs.ballSpeedX;
-        let deltaY = gs.ballY - (gs.paddle2Y + PADDLE_HEIGHT/2);
-        gs.ballSpeedY = deltaY * 0.35;
-    }
-
-    // Scoring
-    if (gs.ballX < 0) {
-      gs.score2++;
-      setScores({ player1: gs.score1, player2: gs.score2 });
-      resetBall('left');
-    } else if (gs.ballX > CANVAS_WIDTH) {
-      gs.score1++;
-      setScores({ player1: gs.score1, player2: gs.score2 });
-      resetBall('right');
-    }
-    
-    // Check for winner
-    if (gs.score1 >= WINNING_SCORE) {
-      setWinner('Player 1');
-      setGameOver(true);
-      const score = gs.score1 * 10 - gs.score2 * 5;
-      if (isHighScore(score)) {
-          setShowHighScoreDialog(true);
-      }
-    } else if (gs.score2 >= WINNING_SCORE) {
-      setWinner(gameMode === 'ai' ? 'AI' : 'Player 2');
-      setGameOver(true);
-    }
-
-    draw();
-    requestAnimationFrame(gameLoop);
-  }, [gameOver, difficulty, resetBall, gameMode, isHighScore, draw]);
-
-  useEffect(() => {
-    draw();
-  }, [draw])
-
-  useEffect(() => {
-    if (!gameOver) {
-      const animationFrameId = requestAnimationFrame(gameLoop);
-      return () => cancelAnimationFrame(animationFrameId);
-    }
-  }, [gameOver, gameLoop]);
+    return () => clearInterval(intervalId);
+  }, [gameOver, gameMode, isHighScore, draw]);
 
    useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {

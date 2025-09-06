@@ -40,14 +40,9 @@ type Brick = {
 type Bricks = Brick[][];
 
 const createBricks = (): Bricks => {
-    const bricks: Bricks = [];
-    for (let c = 0; c < BRICK_COLUMN_COUNT; c++) {
-        bricks[c] = [];
-        for (let r = 0; r < BRICK_ROW_COUNT; r++) {
-            bricks[c][r] = { x: 0, y: 0, status: 1 };
-        }
-    }
-    return bricks;
+    return Array.from({ length: BRICK_COLUMN_COUNT }, () => 
+        Array.from({ length: BRICK_ROW_COUNT }, () => ({ x: 0, y: 0, status: 1 }))
+    );
 };
 
 export default function BrickBreaker() {
@@ -70,29 +65,33 @@ export default function BrickBreaker() {
         rightPressed: false,
         leftPressed: false,
     });
-    
+    const difficultyRef = useRef(difficulty);
+    useEffect(() => {
+        difficultyRef.current = difficulty;
+    }, [difficulty]);
+
     const resetBricks = () => {
         gameState.current.bricks = createBricks();
     }
 
-    const resetBallAndPaddle = useCallback(() => {
+    const resetBallAndPaddle = () => {
         const gs = gameState.current;
-        const { ballSpeed } = DIFFICULTY_SETTINGS[difficulty];
+        const { ballSpeed } = DIFFICULTY_SETTINGS[difficultyRef.current];
         gs.ballX = CANVAS_WIDTH / 2;
         gs.ballY = CANVAS_HEIGHT - PADDLE_HEIGHT - BALL_RADIUS - 5;
         gs.ballDX = ballSpeed * (Math.random() < 0.5 ? 1 : -1);
         gs.ballDY = -ballSpeed;
         gs.paddleX = (CANVAS_WIDTH - PADDLE_WIDTH) / 2;
-    }, [difficulty]);
+    };
 
-    const startGame = useCallback(() => {
+    const startGame = () => {
         setScore(0);
         setLives(3);
         setGameWon(false);
         resetBricks();
         resetBallAndPaddle();
         setGameOver(false);
-    }, [resetBallAndPaddle]);
+    };
     
     const draw = useCallback(() => {
         const ctx = canvasRef.current?.getContext('2d');
@@ -142,85 +141,87 @@ export default function BrickBreaker() {
 
     useEffect(() => {
         draw();
-    }, [draw]);
+    }, [draw, gameOver]);
 
-    const gameLoop = useCallback(() => {
+    useEffect(() => {
         if (gameOver) return;
-        const gs = gameState.current;
-        const { paddleSpeed } = DIFFICULTY_SETTINGS[difficulty];
 
-        // Paddle movement
-        if (gs.rightPressed && gs.paddleX < CANVAS_WIDTH - PADDLE_WIDTH) {
-            gs.paddleX += paddleSpeed;
-        } else if (gs.leftPressed && gs.paddleX > 0) {
-            gs.paddleX -= paddleSpeed;
-        }
+        const gameLoop = () => {
+            const gs = gameState.current;
+            const { paddleSpeed } = DIFFICULTY_SETTINGS[difficultyRef.current];
 
-        // Wall collision
-        if (gs.ballX + gs.ballDX > CANVAS_WIDTH - BALL_RADIUS || gs.ballX + gs.ballDX < BALL_RADIUS) {
-            gs.ballDX = -gs.ballDX;
-        }
-        if (gs.ballY + gs.ballDY < BALL_RADIUS) {
-            gs.ballDY = -gs.ballDY;
-        } else if (gs.ballY + gs.ballDY > CANVAS_HEIGHT - BALL_RADIUS) {
-            // Paddle collision
-            if (gs.ballX > gs.paddleX && gs.ballX < gs.paddleX + PADDLE_WIDTH) {
-                gs.ballDY = -gs.ballDY;
-            } else {
-                setLives(l => {
-                    const newLives = l - 1;
-                    if (newLives <= 0) {
-                        setGameOver(true);
-                        if (isHighScore(score)) setShowHighScoreDialog(true);
-                    } else {
-                        resetBallAndPaddle();
-                    }
-                    return newLives;
-                });
+            // Paddle movement
+            if (gs.rightPressed && gs.paddleX < CANVAS_WIDTH - PADDLE_WIDTH) {
+                gs.paddleX += paddleSpeed;
+            } else if (gs.leftPressed && gs.paddleX > 0) {
+                gs.paddleX -= paddleSpeed;
             }
-        }
-        
-        // Brick collision
-        let bricksLeft = 0;
-        for (let c = 0; c < BRICK_COLUMN_COUNT; c++) {
-            for (let r = 0; r < BRICK_ROW_COUNT; r++) {
-                const b = gs.bricks[c][r];
-                if (b.status === 1) {
-                    bricksLeft++;
-                    if (
-                        gs.ballX > b.x &&
-                        gs.ballX < b.x + BRICK_WIDTH &&
-                        gs.ballY > b.y &&
-                        gs.ballY < b.y + BRICK_HEIGHT
-                    ) {
-                        gs.ballDY = -gs.ballDY;
-                        b.status = 0;
-                        setScore(s => s + 10);
+
+            // Wall collision
+            if (gs.ballX + gs.ballDX > CANVAS_WIDTH - BALL_RADIUS || gs.ballX + gs.ballDX < BALL_RADIUS) {
+                gs.ballDX = -gs.ballDX;
+            }
+            if (gs.ballY + gs.ballDY < BALL_RADIUS) {
+                gs.ballDY = -gs.ballDY;
+            } else if (gs.ballY + gs.ballDY > CANVAS_HEIGHT - BALL_RADIUS) {
+                // Paddle collision
+                if (gs.ballX > gs.paddleX && gs.ballX < gs.paddleX + PADDLE_WIDTH) {
+                    gs.ballDY = -gs.ballDY;
+                } else {
+                    setLives(l => {
+                        const newLives = l - 1;
+                        if (newLives <= 0) {
+                            setGameOver(true);
+                            if (isHighScore(score)) setShowHighScoreDialog(true);
+                        } else {
+                            resetBallAndPaddle();
+                        }
+                        return newLives;
+                    });
+                }
+            }
+            
+            // Brick collision
+            let bricksLeft = 0;
+            for (let c = 0; c < BRICK_COLUMN_COUNT; c++) {
+                for (let r = 0; r < BRICK_ROW_COUNT; r++) {
+                    const b = gs.bricks[c][r];
+                    if (b.status === 1) {
+                        bricksLeft++;
+                        if (
+                            gs.ballX > b.x &&
+                            gs.ballX < b.x + BRICK_WIDTH &&
+                            gs.ballY > b.y &&
+                            gs.ballY < b.y + BRICK_HEIGHT
+                        ) {
+                            gs.ballDY = -gs.ballDY;
+                            b.status = 0;
+                            setScore(s => s + 10);
+                        }
                     }
                 }
             }
-        }
+            
+            const currentScore = score;
+            if (bricksLeft === 1) { 
+                const finalScore = currentScore + 10;
+                setScore(finalScore);
+                setGameWon(true);
+                setGameOver(true);
+                if(isHighScore(finalScore)) setShowHighScoreDialog(true);
+            }
 
-        if (bricksLeft === 1) { // 1 because the brick that was just hit is not yet removed from count
-            setGameWon(true);
-            setGameOver(true);
-            if(isHighScore(score + 10)) setShowHighScoreDialog(true); // +10 for the last brick
-        }
-
-        gs.ballX += gs.ballDX;
-        gs.ballY += gs.ballDY;
+            gs.ballX += gs.ballDX;
+            gs.ballY += gs.ballDY;
+            
+            draw();
+        };
         
-        draw();
-        requestAnimationFrame(gameLoop);
-    }, [draw, difficulty, gameOver, score, isHighScore, resetBallAndPaddle]);
-    
-    useEffect(() => {
-        if (!gameOver) {
-            requestAnimationFrame(gameLoop);
-        } else {
-            draw(); // Draw final state
-        }
-    }, [gameOver, gameLoop, draw]);
+        const intervalId = setInterval(gameLoop, 16); // ~60 FPS
+        
+        return () => clearInterval(intervalId);
+    }, [gameOver, draw, score, isHighScore]);
+
 
     useEffect(() => {
         const keyDownHandler = (e: KeyboardEvent) => {
