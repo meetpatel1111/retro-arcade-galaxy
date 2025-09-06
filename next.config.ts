@@ -24,6 +24,13 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  experimental: {
+    serverActions: {
+      bodySizeLimit: '2mb', // Default is 1mb, increase for potential large payloads
+      // Timeout in seconds. Default is 60s. Video generation can take longer.
+      serverActionsTimeout: 120, 
+    },
+  },
 };
 
 export default nextConfig;
